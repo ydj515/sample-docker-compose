@@ -1,0 +1,5 @@
+[mysqld]
+# 이 곳에 추가적인 MySQL 설정을 기입할 수 있습니다.
+# 예시:
+# max_connections = 200
+# innodb_buffer_pool_size = 1G
