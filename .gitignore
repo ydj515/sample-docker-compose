@@ -13,7 +13,6 @@ apisix/apisix-java-plugin-sample/target/
 !**/src/test/**/target/
 
 ### redis-sentinel ###
-redis/redis-sentinel/master-data
 
 ### STS ###
 .apt_generated
