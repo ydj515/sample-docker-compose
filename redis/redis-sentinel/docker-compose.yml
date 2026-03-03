@@ -4,12 +4,14 @@ services:
   redis-master:
     image: redis:7.2.4
     container_name: redis-master
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
       - "6379:6379"
     volumes:
-      - ./conf/redis-master:/usr/local/etc/redis
+      - ./conf/redis-master:/seed/redis:ro
+      - redis_master_config:/usr/local/etc/redis
       - redis_master_data:/data
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.10
@@ -19,12 +21,14 @@ services:
     container_name: redis-replica-1
     depends_on:
       - redis-master
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
       - "6380:6379"
     volumes:
-      - ./conf/redis-replica-1:/usr/local/etc/redis
+      - ./conf/redis-replica-1:/seed/redis:ro
+      - redis_replica_1_config:/usr/local/etc/redis
       - redis_replica_1_data:/data
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.11
@@ -34,12 +38,14 @@ services:
     container_name: redis-replica-2
     depends_on:
       - redis-master
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
       - "6381:6379"
     volumes:
-      - ./conf/redis-replica-2:/usr/local/etc/redis
+      - ./conf/redis-replica-2:/seed/redis:ro
+      - redis_replica_2_config:/usr/local/etc/redis
       - redis_replica_2_data:/data
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.12
@@ -51,9 +57,11 @@ services:
       - redis-master
     ports:
       - "26379:26379"
-    command: ["redis-server", "/etc/redis-sentinel/sentinel.conf", "--sentinel"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
-      - ./sentinel/sentinel-1:/etc/redis-sentinel
+      - ./sentinel/sentinel-1:/seed/sentinel:ro
+      - sentinel_1_config:/etc/redis-sentinel
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.21
@@ -65,9 +73,11 @@ services:
       - redis-master
     ports:
       - "26380:26379"
-    command: ["redis-server", "/etc/redis-sentinel/sentinel.conf", "--sentinel"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
-      - ./sentinel/sentinel-2:/etc/redis-sentinel
+      - ./sentinel/sentinel-2:/seed/sentinel:ro
+      - sentinel_2_config:/etc/redis-sentinel
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.22
@@ -79,9 +89,11 @@ services:
       - redis-master
     ports:
       - "26381:26379"
-    command: ["redis-server", "/etc/redis-sentinel/sentinel.conf", "--sentinel"]
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
-      - ./sentinel/sentinel-3:/etc/redis-sentinel
+      - ./sentinel/sentinel-3:/seed/sentinel:ro
+      - sentinel_3_config:/etc/redis-sentinel
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     networks:
       redis_sentinel_network:
         ipv4_address: 172.30.0.23
@@ -94,6 +106,12 @@ networks:
         - subnet: 172.30.0.0/24
 
 volumes:
+  redis_master_config:
   redis_master_data:
+  redis_replica_1_config:
   redis_replica_1_data:
+  redis_replica_2_config:
   redis_replica_2_data:
+  sentinel_1_config:
+  sentinel_2_config:
+  sentinel_3_config:
