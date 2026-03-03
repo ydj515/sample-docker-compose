@@ -10,8 +10,8 @@ services:
       - ./master-data:/data
     command: redis-server --appendonly yes
     networks:
-      redis_network:
-      
+      redis_sentinel_network:
+
   redis-replica-1:
     image: redis:7.2.4
     container_name: redis-replica-1
@@ -22,7 +22,7 @@ services:
     command: >
       redis-server --replicaof redis-master 6379 --appendonly yes
     networks:
-      redis_network:
+      redis_sentinel_network:
 
   redis-replica-2:
     image: redis:7.2.4
@@ -34,7 +34,7 @@ services:
     command: >
       redis-server --replicaof redis-master 6379 --appendonly yes
     networks:
-      redis_network:
+      redis_sentinel_network:
 
   sentinel-1:
     image: redis:7.2.4
@@ -47,7 +47,7 @@ services:
     volumes:
       - ./sentinel/sentinel-1.conf:/etc/sentinel.conf
     networks:
-      redis_network:
+      redis_sentinel_network:
 
   sentinel-2:
     image: redis:7.2.4
@@ -60,7 +60,7 @@ services:
     volumes:
       - ./sentinel/sentinel-2.conf:/etc/sentinel.conf
     networks:
-      redis_network:
+      redis_sentinel_network:
 
   sentinel-3:
     image: redis:7.2.4
@@ -73,8 +73,8 @@ services:
     volumes:
       - ./sentinel/sentinel-3.conf:/etc/sentinel.conf
     networks:
-      redis_network:
+      redis_sentinel_network:
 
 networks:
-  redis_network:
+  redis_sentinel_network:
     driver: bridge
