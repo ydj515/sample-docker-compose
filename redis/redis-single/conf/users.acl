@@ -1,0 +1,3 @@
+user default off sanitize-payload resetchannels -@all
+user app on >app-password-123 ~* &* +@all
+user readonly on >readonly-password-123 ~* &* -@all +@read +ping +info
