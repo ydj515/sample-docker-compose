@@ -17,12 +17,13 @@ services:
           cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
           chown mongodb:mongodb /tmp/mongodb-keyfile
           chmod 400 /tmp/mongodb-keyfile
-          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --config /etc/mongod.conf
     ports:
       - "${MONGO1_PORT:-27017}:27017"
     volumes:
       - mongo1_data:/data/db
       - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+      - ./conf/mongod.conf:/etc/mongod.conf:ro
     healthcheck:
       test:
         [
@@ -52,12 +53,13 @@ services:
           cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
           chown mongodb:mongodb /tmp/mongodb-keyfile
           chmod 400 /tmp/mongodb-keyfile
-          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --config /etc/mongod.conf
     ports:
       - "${MONGO2_PORT:-27018}:27017"
     volumes:
       - mongo2_data:/data/db
       - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+      - ./conf/mongod.conf:/etc/mongod.conf:ro
     healthcheck:
       test:
         [
@@ -87,12 +89,13 @@ services:
           cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
           chown mongodb:mongodb /tmp/mongodb-keyfile
           chmod 400 /tmp/mongodb-keyfile
-          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --config /etc/mongod.conf
     ports:
       - "${MONGO3_PORT:-27019}:27017"
     volumes:
       - mongo3_data:/data/db
       - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+      - ./conf/mongod.conf:/etc/mongod.conf:ro
     healthcheck:
       test:
         [

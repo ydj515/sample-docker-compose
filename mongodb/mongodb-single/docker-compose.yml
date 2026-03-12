@@ -2,6 +2,10 @@ services:
   mongo:
     image: mongo:${MONGO_VERSION:-8.0.19}
     restart: unless-stopped
+    command:
+      - mongod
+      - --config
+      - /etc/mongod.conf
     networks:
       - mongodb_single_network
     env_file:
@@ -14,6 +18,7 @@ services:
       - "${MONGO_PORT:-27017}:27017"
     volumes:
       - mongo_data:/data/db
+      - ./conf/mongod.conf:/etc/mongod.conf:ro
     healthcheck:
       test:
         [
