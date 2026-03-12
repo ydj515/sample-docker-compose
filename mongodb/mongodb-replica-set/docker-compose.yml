@@ -1,0 +1,134 @@
+services:
+  mongo1:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: mongo1
+    restart: unless-stopped
+    networks:
+      - mongodb_replica_set_network
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command:
+      - bash
+      - -c
+      - |
+          cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
+          chown mongodb:mongodb /tmp/mongodb-keyfile
+          chmod 400 /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+    ports:
+      - "${MONGO1_PORT:-27017}:27017"
+    volumes:
+      - mongo1_data:/data/db
+      - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh \"mongodb://$${MONGO_INITDB_ROOT_USERNAME}:$${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?directConnection=true\" --quiet --eval \"db.adminCommand('ping').ok\" | grep 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mongo2:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: mongo2
+    restart: unless-stopped
+    networks:
+      - mongodb_replica_set_network
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command:
+      - bash
+      - -c
+      - |
+          cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
+          chown mongodb:mongodb /tmp/mongodb-keyfile
+          chmod 400 /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+    ports:
+      - "${MONGO2_PORT:-27018}:27017"
+    volumes:
+      - mongo2_data:/data/db
+      - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh \"mongodb://$${MONGO_INITDB_ROOT_USERNAME}:$${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?directConnection=true\" --quiet --eval \"db.adminCommand('ping').ok\" | grep 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mongo3:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: mongo3
+    restart: unless-stopped
+    networks:
+      - mongodb_replica_set_network
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command:
+      - bash
+      - -c
+      - |
+          cp /run/secrets/mongodb-keyfile /tmp/mongodb-keyfile
+          chown mongodb:mongodb /tmp/mongodb-keyfile
+          chmod 400 /tmp/mongodb-keyfile
+          exec docker-entrypoint.sh mongod --replSet rs0 --bind_ip_all --port 27017 --keyFile /tmp/mongodb-keyfile
+    ports:
+      - "${MONGO3_PORT:-27019}:27017"
+    volumes:
+      - mongo3_data:/data/db
+      - ./scripts/mongodb-keyfile:/run/secrets/mongodb-keyfile:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh \"mongodb://$${MONGO_INITDB_ROOT_USERNAME}:$${MONGO_INITDB_ROOT_PASSWORD}@127.0.0.1:27017/admin?directConnection=true\" --quiet --eval \"db.adminCommand('ping').ok\" | grep 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  replica-set-init:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    restart: "no"
+    networks:
+      - mongodb_replica_set_network
+    env_file:
+      - .env
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
+    volumes:
+      - ./scripts/init-replica-set.sh:/scripts/init-replica-set.sh:ro
+    entrypoint:
+      - bash
+      - /scripts/init-replica-set.sh
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:
+
+networks:
+  mongodb_replica_set_network:
+    driver: bridge
