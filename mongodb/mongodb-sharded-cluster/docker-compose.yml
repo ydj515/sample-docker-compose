@@ -1,0 +1,165 @@
+services:
+  configsvr1:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: configsvr1
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--configsvr", "--replSet", "configReplSet", "--bind_ip_all", "--port", "27019"]
+    volumes:
+      - configsvr1_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27019 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  configsvr2:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: configsvr2
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--configsvr", "--replSet", "configReplSet", "--bind_ip_all", "--port", "27019"]
+    volumes:
+      - configsvr2_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27019 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  configsvr3:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: configsvr3
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--configsvr", "--replSet", "configReplSet", "--bind_ip_all", "--port", "27019"]
+    volumes:
+      - configsvr3_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27019 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1-1:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: shard1-1
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--bind_ip_all", "--port", "27018"]
+    volumes:
+      - shard1_1_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27018 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1-2:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: shard1-2
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--bind_ip_all", "--port", "27018"]
+    volumes:
+      - shard1_2_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27018 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1-3:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: shard1-3
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command: ["mongod", "--shardsvr", "--replSet", "shard1ReplSet", "--bind_ip_all", "--port", "27018"]
+    volumes:
+      - shard1_3_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27018 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mongos:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    hostname: mongos
+    restart: unless-stopped
+    networks:
+      - mongodb_sharded_cluster_network
+    command:
+      [
+        "mongos",
+        "--bind_ip_all",
+        "--port",
+        "27017",
+        "--configdb",
+        "configReplSet/configsvr1:27019,configsvr2:27019,configsvr3:27019",
+      ]
+    ports:
+      - "${MONGOS_PORT:-27017}:27017"
+    depends_on:
+      configsvr1:
+        condition: service_started
+      configsvr2:
+        condition: service_started
+      configsvr3:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --host 127.0.0.1 --port 27017 --quiet --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  cluster-init:
+    image: mongo:${MONGO_VERSION:-8.0.19}
+    restart: "no"
+    networks:
+      - mongodb_sharded_cluster_network
+    depends_on:
+      configsvr1:
+        condition: service_healthy
+      configsvr2:
+        condition: service_healthy
+      configsvr3:
+        condition: service_healthy
+      shard1-1:
+        condition: service_healthy
+      shard1-2:
+        condition: service_healthy
+      shard1-3:
+        condition: service_healthy
+      mongos:
+        condition: service_started
+    volumes:
+      - ./scripts/init-sharded-cluster.sh:/scripts/init-sharded-cluster.sh:ro
+    entrypoint:
+      - bash
+      - /scripts/init-sharded-cluster.sh
+
+volumes:
+  configsvr1_data:
+  configsvr2_data:
+  configsvr3_data:
+  shard1_1_data:
+  shard1_2_data:
+  shard1_3_data:
+
+networks:
+  mongodb_sharded_cluster_network:
+    driver: bridge
