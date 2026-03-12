@@ -1,23 +1,21 @@
 services:
   redis:
-    image: redis:7.2.4
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    image: redis:${REDIS_VERSION:-7.2.4}
+    env_file:
+      - .env
+    command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh"]
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - ./conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - ./conf/users.acl:/usr/local/etc/redis/users.acl:ro
+      - ./conf:/seed/redis:ro
+      - redis_single_config:/usr/local/etc/redis
       - redis_single_data:/data
+      - ./scripts/bootstrap-config.sh:/usr/local/bin/bootstrap-config.sh:ro
     healthcheck:
       test:
         [
-          "CMD",
-          "redis-cli",
-          "--user",
-          "app",
-          "--pass",
-          "app-password-123",
-          "PING",
+          "CMD-SHELL",
+          "redis-cli --user \"$${REDIS_APP_USERNAME}\" --pass \"$${REDIS_APP_PASSWORD}\" PING | grep PONG",
         ]
       interval: 10s
       timeout: 5s
@@ -30,4 +28,5 @@ networks:
     driver: bridge
 
 volumes:
+  redis_single_config:
   redis_single_data:

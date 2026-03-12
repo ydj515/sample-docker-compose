@@ -1,10 +1,12 @@
 services:
   redis-master:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-master
+    env_file:
+      - .env
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
-      - "6379:6379"
+      - "${REDIS_MASTER_PORT:-6379}:6379"
     volumes:
       - ./conf/redis-master:/seed/redis:ro
       - redis_master_config:/usr/local/etc/redis
@@ -15,13 +17,15 @@ services:
         ipv4_address: 172.30.0.10
 
   redis-replica-1:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-replica-1
+    env_file:
+      - .env
     depends_on:
       - redis-master
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
-      - "6380:6379"
+      - "${REDIS_REPLICA_1_PORT:-6380}:6379"
     volumes:
       - ./conf/redis-replica-1:/seed/redis:ro
       - redis_replica_1_config:/usr/local/etc/redis
@@ -32,13 +36,15 @@ services:
         ipv4_address: 172.30.0.11
 
   redis-replica-2:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-replica-2
+    env_file:
+      - .env
     depends_on:
       - redis-master
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "redis", "/seed/redis", "/usr/local/etc/redis", "redis.conf"]
     ports:
-      - "6381:6379"
+      - "${REDIS_REPLICA_2_PORT:-6381}:6379"
     volumes:
       - ./conf/redis-replica-2:/seed/redis:ro
       - redis_replica_2_config:/usr/local/etc/redis
@@ -49,12 +55,14 @@ services:
         ipv4_address: 172.30.0.12
 
   sentinel-1:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-sentinel-1
+    env_file:
+      - .env
     depends_on:
       - redis-master
     ports:
-      - "26379:26379"
+      - "${SENTINEL_1_PORT:-26379}:26379"
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
       - ./sentinel/sentinel-1:/seed/sentinel:ro
@@ -65,12 +73,14 @@ services:
         ipv4_address: 172.30.0.21
 
   sentinel-2:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-sentinel-2
+    env_file:
+      - .env
     depends_on:
       - redis-master
     ports:
-      - "26380:26379"
+      - "${SENTINEL_2_PORT:-26380}:26379"
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
       - ./sentinel/sentinel-2:/seed/sentinel:ro
@@ -81,12 +91,14 @@ services:
         ipv4_address: 172.30.0.22
 
   sentinel-3:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
     container_name: redis-sentinel-3
+    env_file:
+      - .env
     depends_on:
       - redis-master
     ports:
-      - "26381:26379"
+      - "${SENTINEL_3_PORT:-26381}:26379"
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh", "sentinel", "/seed/sentinel", "/etc/redis-sentinel", "sentinel.conf"]
     volumes:
       - ./sentinel/sentinel-3:/seed/sentinel:ro

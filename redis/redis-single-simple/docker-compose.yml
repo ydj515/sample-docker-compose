@@ -1,5 +1,7 @@
 services:
   redis:
-    image: redis:7.2.4
+    image: redis:${REDIS_VERSION:-7.2.4}
+    env_file:
+      - .env
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"

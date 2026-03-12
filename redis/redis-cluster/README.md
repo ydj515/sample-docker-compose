@@ -14,7 +14,23 @@
 
 ## environment
 
-nothing to do.
+1. 예제 폴더로 이동합니다.
+
+```sh
+cd redis/redis-cluster
+```
+
+2. 환경 변수 파일을 준비합니다.
+
+```sh
+cp .env-sample .env
+```
+
+3. 필요하면 [`.env`](./.env)에서 다음 값을 조정합니다.
+
+- `REDIS_VERSION`
+- `REDIS_NODE_1_PORT` ~ `REDIS_NODE_6_PORT`
+- `REDIS_NODE_1_BUS_PORT` ~ `REDIS_NODE_6_BUS_PORT`
 
 ## composition
 
@@ -85,7 +101,7 @@ docker compose up -d
 
 ## cluster creation
 
-클러스터 생성은 [create-cluster.sh](/Users/dongjin/dev/study/sample-docker-compose/redis/redis-cluster/scripts/create-cluster.sh)로 수행합니다.
+클러스터 생성은 [`scripts/create-cluster.sh`](./scripts/create-cluster.sh)로 수행합니다.
 
 ```sh
 ./scripts/create-cluster.sh

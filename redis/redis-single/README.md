@@ -11,7 +11,26 @@
 
 ## environment
 
-nothing to do.
+1. 예제 폴더로 이동합니다.
+
+```sh
+cd redis/redis-single
+```
+
+2. 환경 변수 파일을 준비합니다.
+
+```sh
+cp .env-sample .env
+```
+
+3. 필요하면 [`.env`](./.env)에서 다음 값을 조정합니다.
+
+- `REDIS_VERSION`
+- `REDIS_PORT`
+- `REDIS_APP_USERNAME`
+- `REDIS_APP_PASSWORD`
+- `REDIS_READONLY_USERNAME`
+- `REDIS_READONLY_PASSWORD`
 
 ## composition
 
@@ -32,8 +51,9 @@ graph TD
 ├── docker-compose.yml
 ├── README.md
 ├── conf/
-│   ├── redis.conf
-│   └── users.acl
+│   └── redis.conf
+└── scripts/
+    └── bootstrap-config.sh
 ```
 
 ## run
@@ -47,11 +67,11 @@ docker compose up -d
 기본 `default` 사용자는 비활성화되어 있으므로, 접속 시 반드시 ACL 사용자명과 비밀번호를 함께 전달해야 합니다.
 
 - 일반 사용자
-  - username: `app`
-  - password: `app-password-123`
+  - username 예시: `app`
+  - password 예시: `app-password-123`
 - 읽기 전용 사용자
-  - username: `readonly`
-  - password: `readonly-password-123`
+  - username 예시: `readonly`
+  - password 예시: `readonly-password-123`
 
 예시:
 
@@ -89,21 +109,25 @@ loglevel notice
 
 ## users.acl
 
+`users.acl`은 Git에 고정 파일로 두지 않고, 컨테이너 시작 시 [`.env`](./.env) 값을 읽어 `/usr/local/etc/redis/users.acl`로 생성합니다.
+
+생성되는 형식은 아래와 같습니다.
+
 ```sh
 user default off sanitize-payload resetchannels -@all
-user app on >app-password-123 ~* &* +@all
-user readonly on >readonly-password-123 ~* &* -@all +@read +ping +info
+user ${REDIS_APP_USERNAME} on >${REDIS_APP_PASSWORD} ~* &* +@all
+user ${REDIS_READONLY_USERNAME} on >${REDIS_READONLY_PASSWORD} ~* &* -@all +@read +ping +info
 ```
 
 - `user default off`
   - 익명 기본 사용자를 비활성화합니다.
 - `user app on ... +@all`
-  - 애플리케이션용 일반 사용자입니다.
+  - `.env`의 `REDIS_APP_USERNAME`, `REDIS_APP_PASSWORD`로 생성되는 애플리케이션용 일반 사용자입니다.
 - `user readonly on ... +@read`
-  - 조회 전용 권한만 허용합니다.
+  - `.env`의 `REDIS_READONLY_USERNAME`, `REDIS_READONLY_PASSWORD`로 생성되는 조회 전용 사용자입니다.
 
 ## notes
 
 - Redis 데이터는 호스트 폴더가 아니라 Docker named volume `redis_single_data`에 저장됩니다.
-- 실제 사용 시에는 `users.acl`의 예시 비밀번호를 반드시 변경해야 합니다.
+- 실제 사용 시에는 [`.env`](./.env)의 예시 비밀번호를 반드시 변경해야 합니다.
 - 애플리케이션에서도 Redis URI 대신 ACL 사용자명 기반 인증 설정을 함께 맞춰야 합니다.
