@@ -1,21 +1,28 @@
 services:
   postgres:
-    image: postgres:17
+    image: ${POSTGRES_IMAGE:-postgres:17}
     restart: always
     ports:
       # 호스트 포트:컨테이너 포트
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       # 기본 슈퍼유저 계정 정보를 설정합니다.
-      POSTGRES_USER: 'postgres'
-      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       # 컨테이너가 처음 시작될 때 자동으로 생성할 데이터베이스 이름입니다.
-      POSTGRES_DB: 'postgres'
+      POSTGRES_DB: ${POSTGRES_DB:-mydatabase}
       # 컨테이너의 타임존을 서울로 설정합니다.
-      TZ: 'Asia/Seoul'
+      TZ: ${TZ:-Asia/Seoul}
+    command:
+      # 커스텀 postgresql.conf 파일을 사용합니다.
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
     volumes:
       # 데이터 영속성을 위해 명명된 볼륨(postgres_data)을 마운트합니다.
       - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 주요 설정을 문서화한 커스텀 설정 파일을 마운트합니다.
+      - ./conf.d/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       # 초기화 스크립트를 실행할 디렉토리를 마운트합니다.
       - ./initdb.d:/docker-entrypoint-initdb.d
 
