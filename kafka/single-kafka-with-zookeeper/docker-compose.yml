@@ -1,38 +1,55 @@
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.3.0
+    image: ${ZOOKEEPER_IMAGE}
     hostname: zookeeper
-    container_name: zookeeper
     ports:
-      - "2181:2181"
+      - "${ZOOKEEPER_PORT}:${ZOOKEEPER_PORT}"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_PORT}
       ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "cub zk-ready localhost:${ZOOKEEPER_PORT} 30"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
-      - jpasample-network
+      - single-kafka-network
   kafka:
-    image: confluentinc/cp-kafka:7.3.0
+    image: ${KAFKA_IMAGE}
     hostname: kafka
-    container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     ports:
-      - "29092:29092"
-      - "9092:9092"
-      - "9101:9101"
+      - "${KAFKA_INTERNAL_PORT}:${KAFKA_INTERNAL_PORT}"
+      - "${KAFKA_EXTERNAL_PORT}:${KAFKA_EXTERNAL_PORT}"
+      - "${KAFKA_JMX_PORT}:${KAFKA_JMX_PORT}"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:${ZOOKEEPER_PORT}"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://127.0.0.1:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_INTERNAL_PORT},PLAINTEXT_HOST://0.0.0.0:${KAFKA_EXTERNAL_PORT}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:${KAFKA_INTERNAL_PORT},PLAINTEXT_HOST://${KAFKA_HOST_IP}:${KAFKA_EXTERNAL_PORT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_JMX_PORT: ${KAFKA_JMX_PORT}
+      KAFKA_JMX_HOSTNAME: ${KAFKA_HOST_IP}
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - single-kafka-network
 #  kafka-connect:
 #    image: confluentinc/cp-kafka-connect:7.0.1
 #    ports:
@@ -62,20 +79,25 @@ services:
 #    networks:
 #      - jpasample-network
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+    image: ${KAFKA_UI_IMAGE}
     ports:
-      - "8080:8080"
+      - "${KAFKA_UI_PORT}:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: "local-kafka"
-      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka:29092"
-      KAFKA_CLUSTERS_0_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_CLUSTERS_0_NAME: "${KAFKA_CLUSTER_NAME}"
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka:${KAFKA_INTERNAL_PORT}"
+      KAFKA_CLUSTERS_0_ZOOKEEPER_CONNECT: "zookeeper:${ZOOKEEPER_PORT}"
     depends_on:
-      - kafka
-      - zookeeper
+      kafka:
+        condition: service_healthy
+      zookeeper:
+        condition: service_healthy
     networks:
-      - jpasample-network
+      - single-kafka-network
 
 networks:
-  jpasample-network:
+  single-kafka-network:
     driver: bridge
+
+volumes:
+  zookeeper-data:
+  kafka-data:

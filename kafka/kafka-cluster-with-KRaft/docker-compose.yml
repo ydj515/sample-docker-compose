@@ -1,79 +1,116 @@
 services:
   kafka-1:
-    container_name: kafka-1
-    image: confluentinc/cp-kafka:7.5.3
+    image: ${KAFKA_IMAGE}
     ports:
-      - "${KAFKA_1_PORT}:9092"
-    #    volumes:
-    #      - ./data/${KAFKA_DIR}/kafka-1:/var/lib/kafka/data
+      - "${KAFKA_1_PORT}:${KAFKA_EXTERNAL_PORT}"
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://:29092,EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_1_PORT}
-      KAFKA_LISTENERS: INTERNAL://:29092,CONTROLLER://:29093,EXTERNAL://0.0.0.0:${KAFKA_1_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-1:${KAFKA_INTERNAL_PORT},EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_1_PORT}
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:${KAFKA_INTERNAL_PORT},CONTROLLER://0.0.0.0:${KAFKA_CONTROLLER_PORT},EXTERNAL://0.0.0.0:${KAFKA_EXTERNAL_PORT}
       KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:29093,2@kafka-2:29093,3@kafka-3:29093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:${KAFKA_CONTROLLER_PORT},2@kafka-2:${KAFKA_CONTROLLER_PORT},3@kafka-3:${KAFKA_CONTROLLER_PORT}
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-kraft-network
 
   kafka-2:
-    container_name: kafka-2
-    image: confluentinc/cp-kafka:7.5.3
+    image: ${KAFKA_IMAGE}
     ports:
-      - "${KAFKA_2_PORT}:9093"
-    #    volumes:
-    #      - ./data/${KAFKA_DIR}/kafka-2:/var/lib/kafka/data
+      - "${KAFKA_2_PORT}:${KAFKA_EXTERNAL_PORT}"
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://:29092,EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_2_PORT}
-      KAFKA_LISTENERS: INTERNAL://:29092,CONTROLLER://kafka-2:29093,EXTERNAL://0.0.0.0:${KAFKA_2_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-2:${KAFKA_INTERNAL_PORT},EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_2_PORT}
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:${KAFKA_INTERNAL_PORT},CONTROLLER://0.0.0.0:${KAFKA_CONTROLLER_PORT},EXTERNAL://0.0.0.0:${KAFKA_EXTERNAL_PORT}
       KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:29093,2@kafka-2:29093,3@kafka-3:29093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:${KAFKA_CONTROLLER_PORT},2@kafka-2:${KAFKA_CONTROLLER_PORT},3@kafka-3:${KAFKA_CONTROLLER_PORT}
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-kraft-network
 
   kafka-3:
-    container_name: kafka-3
-    image: confluentinc/cp-kafka:7.5.3
+    image: ${KAFKA_IMAGE}
     ports:
-      - "${KAFKA_3_PORT}:9094"
-    #    volumes:
-    #      - ./data/${KAFKA_DIR}/kafka-3:/var/lib/kafka/data
+      - "${KAFKA_3_PORT}:${KAFKA_EXTERNAL_PORT}"
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
     environment:
       KAFKA_NODE_ID: 3
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://:29092,EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_3_PORT}
-      KAFKA_LISTENERS: INTERNAL://:29092,CONTROLLER://kafka-3:29093,EXTERNAL://0.0.0.0:${KAFKA_3_PORT}
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-3:${KAFKA_INTERNAL_PORT},EXTERNAL://${DOCKER_HOST_IP}:${KAFKA_3_PORT}
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:${KAFKA_INTERNAL_PORT},CONTROLLER://0.0.0.0:${KAFKA_CONTROLLER_PORT},EXTERNAL://0.0.0.0:${KAFKA_EXTERNAL_PORT}
       KAFKA_PROCESS_ROLES: "broker,controller"
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:29093,2@kafka-2:29093,3@kafka-3:29093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:${KAFKA_CONTROLLER_PORT},2@kafka-2:${KAFKA_CONTROLLER_PORT},3@kafka-3:${KAFKA_CONTROLLER_PORT}
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-kraft-network
 
   kafka-ui:
-    image: provectuslabs/kafka-ui
-    container_name: kafka-ui
+    image: ${KAFKA_UI_IMAGE}
     ports:
       - "${KAFKA_UI_PORT}:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: ${PROFILE:-local}
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:29092,kafka-2:29092,kafka-3:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:${KAFKA_INTERNAL_PORT},kafka-2:${KAFKA_INTERNAL_PORT},kafka-3:${KAFKA_INTERNAL_PORT}
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
     networks:
-      - jpasample-network
+      - kafka-cluster-kraft-network
 
 networks:
-  jpasample-network:
+  kafka-cluster-kraft-network:
     driver: bridge
+
+volumes:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:

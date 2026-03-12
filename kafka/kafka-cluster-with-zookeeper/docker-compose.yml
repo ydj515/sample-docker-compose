@@ -1,105 +1,225 @@
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.3.0
-    hostname: zookeeper
-    container_name: zookeeper
+  zookeeper-1:
+    image: ${ZOOKEEPER_IMAGE}
+    hostname: zookeeper-1
     ports:
-      - "2181:2181"
+      - "${ZOOKEEPER_1_EXTERNAL_PORT}:${ZOOKEEPER_CLIENT_PORT}"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+      ZOOKEEPER_INIT_LIMIT: ${ZOOKEEPER_INIT_LIMIT}
+      ZOOKEEPER_SYNC_LIMIT: ${ZOOKEEPER_SYNC_LIMIT}
+      ZOOKEEPER_SERVERS: ${ZOOKEEPER_SERVERS}
+    volumes:
+      - zookeeper-1-data:/var/lib/zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "cub zk-ready localhost:${ZOOKEEPER_CLIENT_PORT} 30"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
-      - jpasample-network
+      - kafka-cluster-zookeeper-network
+
+  zookeeper-2:
+    image: ${ZOOKEEPER_IMAGE}
+    hostname: zookeeper-2
+    ports:
+      - "${ZOOKEEPER_2_EXTERNAL_PORT}:${ZOOKEEPER_CLIENT_PORT}"
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+      ZOOKEEPER_INIT_LIMIT: ${ZOOKEEPER_INIT_LIMIT}
+      ZOOKEEPER_SYNC_LIMIT: ${ZOOKEEPER_SYNC_LIMIT}
+      ZOOKEEPER_SERVERS: ${ZOOKEEPER_SERVERS}
+    volumes:
+      - zookeeper-2-data:/var/lib/zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "cub zk-ready localhost:${ZOOKEEPER_CLIENT_PORT} 30"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kafka-cluster-zookeeper-network
+
+  zookeeper-3:
+    image: ${ZOOKEEPER_IMAGE}
+    hostname: zookeeper-3
+    ports:
+      - "${ZOOKEEPER_3_EXTERNAL_PORT}:${ZOOKEEPER_CLIENT_PORT}"
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: ${ZOOKEEPER_CLIENT_PORT}
+      ZOOKEEPER_TICK_TIME: ${ZOOKEEPER_TICK_TIME}
+      ZOOKEEPER_INIT_LIMIT: ${ZOOKEEPER_INIT_LIMIT}
+      ZOOKEEPER_SYNC_LIMIT: ${ZOOKEEPER_SYNC_LIMIT}
+      ZOOKEEPER_SERVERS: ${ZOOKEEPER_SERVERS}
+    volumes:
+      - zookeeper-3-data:/var/lib/zookeeper
+    healthcheck:
+      test: ["CMD-SHELL", "cub zk-ready localhost:${ZOOKEEPER_CLIENT_PORT} 30"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - kafka-cluster-zookeeper-network
 
   kafka-1:
-    image: confluentinc/cp-kafka:7.3.0
+    image: ${KAFKA_IMAGE}
     hostname: kafka-1
-    container_name: kafka-1
     depends_on:
-      - zookeeper
+      zookeeper-1:
+        condition: service_healthy
+      zookeeper-2:
+        condition: service_healthy
+      zookeeper-3:
+        condition: service_healthy
     ports:
-      - "29091:29091"
-      - "9091:9091"
-      - "9101:9101"
+      - "${KAFKA_1_INTERNAL_PORT}:${KAFKA_1_INTERNAL_PORT}"
+      - "${KAFKA_1_EXTERNAL_PORT}:${KAFKA_1_EXTERNAL_PORT}"
+      - "${KAFKA_1_JMX_PORT}:${KAFKA_1_JMX_PORT}"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:29091,PLAINTEXT_HOST://127.0.0.1:9091
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_1_INTERNAL_PORT},PLAINTEXT_HOST://0.0.0.0:${KAFKA_1_EXTERNAL_PORT}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:${KAFKA_1_INTERNAL_PORT},PLAINTEXT_HOST://${KAFKA_HOST_IP}:${KAFKA_1_EXTERNAL_PORT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_JMX_PORT: ${KAFKA_1_JMX_PORT}
+      KAFKA_JMX_HOSTNAME: ${KAFKA_HOST_IP}
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_1_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-zookeeper-network
 
   kafka-2:
-    image: confluentinc/cp-kafka:7.3.0
+    image: ${KAFKA_IMAGE}
     hostname: kafka-2
-    container_name: kafka-2
     depends_on:
-      - zookeeper
+      zookeeper-1:
+        condition: service_healthy
+      zookeeper-2:
+        condition: service_healthy
+      zookeeper-3:
+        condition: service_healthy
     ports:
-      - "29092:29092"
-      - "9092:9092"
-      - "9102:9102"
+      - "${KAFKA_2_INTERNAL_PORT}:${KAFKA_2_INTERNAL_PORT}"
+      - "${KAFKA_2_EXTERNAL_PORT}:${KAFKA_2_EXTERNAL_PORT}"
+      - "${KAFKA_2_JMX_PORT}:${KAFKA_2_JMX_PORT}"
     environment:
       KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:29092,PLAINTEXT_HOST://127.0.0.1:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_2_INTERNAL_PORT},PLAINTEXT_HOST://0.0.0.0:${KAFKA_2_EXTERNAL_PORT}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:${KAFKA_2_INTERNAL_PORT},PLAINTEXT_HOST://${KAFKA_HOST_IP}:${KAFKA_2_EXTERNAL_PORT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9102
-      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_JMX_PORT: ${KAFKA_2_JMX_PORT}
+      KAFKA_JMX_HOSTNAME: ${KAFKA_HOST_IP}
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_2_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-zookeeper-network
 
   kafka-3:
-    image: confluentinc/cp-kafka:7.3.0
+    image: ${KAFKA_IMAGE}
     hostname: kafka-3
-    container_name: kafka-3
     depends_on:
-      - zookeeper
+      zookeeper-1:
+        condition: service_healthy
+      zookeeper-2:
+        condition: service_healthy
+      zookeeper-3:
+        condition: service_healthy
     ports:
-      - "29093:29093"
-      - "9093:9093"
-      - "9103:9103"
+      - "${KAFKA_3_INTERNAL_PORT}:${KAFKA_3_INTERNAL_PORT}"
+      - "${KAFKA_3_EXTERNAL_PORT}:${KAFKA_3_EXTERNAL_PORT}"
+      - "${KAFKA_3_JMX_PORT}:${KAFKA_3_JMX_PORT}"
     environment:
       KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:29093,PLAINTEXT_HOST://127.0.0.1:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_3_INTERNAL_PORT},PLAINTEXT_HOST://0.0.0.0:${KAFKA_3_EXTERNAL_PORT}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:${KAFKA_3_INTERNAL_PORT},PLAINTEXT_HOST://${KAFKA_HOST_IP}:${KAFKA_3_EXTERNAL_PORT}
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9103
-      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_JMX_PORT: ${KAFKA_3_JMX_PORT}
+      KAFKA_JMX_HOSTNAME: ${KAFKA_HOST_IP}
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:${KAFKA_3_INTERNAL_PORT} > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
     networks:
-      - jpasample-network
+      - kafka-cluster-zookeeper-network
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+    image: ${KAFKA_UI_IMAGE}
     ports:
-      - "8080:8080"
+      - "${KAFKA_UI_PORT}:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: "local-kafka"
-      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka-1:29091,kafka-2:29092,kafka-3:29093"
-      KAFKA_CLUSTERS_0_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_CLUSTERS_0_NAME: "${KAFKA_CLUSTER_NAME}"
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: "kafka-1:${KAFKA_1_INTERNAL_PORT},kafka-2:${KAFKA_2_INTERNAL_PORT},kafka-3:${KAFKA_3_INTERNAL_PORT}"
+      KAFKA_CLUSTERS_0_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
-      - zookeeper
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+      zookeeper-1:
+        condition: service_healthy
+      zookeeper-2:
+        condition: service_healthy
+      zookeeper-3:
+        condition: service_healthy
     networks:
-      - jpasample-network
+      - kafka-cluster-zookeeper-network
 
 networks:
-  jpasample-network:
+  kafka-cluster-zookeeper-network:
     driver: bridge
+
+volumes:
+  zookeeper-1-data:
+  zookeeper-2-data:
+  zookeeper-3-data:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:
