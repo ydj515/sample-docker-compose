@@ -138,7 +138,7 @@ services:
       - apisix_network
 
   prometheus:
-    image: prom/prometheus:v2.25.0
+    image: prom/prometheus:v2.48.0
     container_name: prometheus
     restart: always
     volumes:
