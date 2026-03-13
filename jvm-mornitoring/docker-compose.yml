@@ -1,22 +1,30 @@
 services:
   prometheus:
-    image: prom/prometheus:v2.48.0
+    image: prom/prometheus:${PROMETHEUS_VERSION}
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT}:9090"
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --web.enable-remote-write-receiver
       - --enable-feature=otlp-write-receiver
       - --enable-feature=exemplar-storage
+    # extra_hosts는 컨테이너 안의 /etc/hosts에 호스트 이름을 강제로 추가하는 설정입니다.
+    # 여기서는 host.docker.internal을 Docker 호스트 게이트웨이로 매핑해서,
+    # 로컬에서 실행 중인 Spring Boot 앱의 /actuator/prometheus를 스크랩할 수 있게 합니다.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - node-exporter
+      - cadvisor
     networks:
       - monitoring
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
-    image: grafana/grafana:11.5.2
+    image: grafana/grafana:${GRAFANA_VERSION}
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT}:3000"
     environment:
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
     volumes:
@@ -26,6 +34,27 @@ services:
       - prometheus
     networks:
       - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION}
+    command:
+      - --path.rootfs=/host
+    pid: host
+    networks:
+      - monitoring
+    volumes:
+      - /:/host:ro,rslave
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION}
+    privileged: true
+    networks:
+      - monitoring
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
 
 networks:
   monitoring:

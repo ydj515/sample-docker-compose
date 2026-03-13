@@ -1,20 +1,37 @@
 global:
   evaluation_interval: 30s
-  scrape_interval: 15s # By default, scrape targets every 15 seconds.
+  scrape_interval: 5s # 부하 테스트 중에는 조금 더 촘촘하게 수집합니다.
 
   # Attach these labels to any time series or alerts when communicating with
   # external systems (federation, remote storage, Alertmanager).
   external_labels:
     monitor: "dev-prometheus"
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
 scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
   - job_name: 'spring-app'
     metrics_path: '/actuator/prometheus'
     scrape_interval: 5s
     static_configs:
       - targets: ['host.docker.internal:8081']
+
+  - job_name: 'node-exporter'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'cadvisor'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # k6는 scrape 대상이 아니라 Prometheus remote write receiver로 메트릭을 밀어 넣습니다.
+  # 실행 예시:
+  # K6_PROMETHEUS_RW_SERVER_URL=http://localhost:9090/api/v1/write \
+  # k6 run -o experimental-prometheus-rw ./load_test.js
 
 
 
