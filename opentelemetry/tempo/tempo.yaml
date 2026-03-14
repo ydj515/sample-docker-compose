@@ -23,15 +23,33 @@ distributor:
     otlp:
       protocols:
         http:
+          endpoint: 0.0.0.0:4318
         grpc:
+          endpoint: 0.0.0.0:4317
     opencensus:
 
 ingester:
-  max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+  # 로컬 개발 권장값: 5m
+  # Tempo 기본값: 30m
+  max_block_duration: 5m
+  # 로컬 개발 권장값: 524288000(500MB)
+  # Tempo 기본값: 524288000(500MB)
+  max_block_bytes: 524288000
 
 compactor:
   compaction:
-    block_retention: 1h                # overall Tempo trace retention. set for demo purposes
+    # 로컬 개발 권장 기본값: 168h(7d)
+    # Tempo 기본값: 336h(14d)
+    # 이 값을 넘긴 trace block은 compactor가 정리합니다.
+    block_retention: 168h
+    # 로컬 개발 기본값: 1h
+    # Tempo 기본값: 1h
+    # compacted block 재정리 주기를 너무 길게 두지 않기 위한 보조 설정입니다.
+    compacted_block_retention: 1h
+    # 로컬 개발 권장값: 5368709120(5GB)
+    # Tempo 기본값: 107374182400(100GB)
+    # compacted block 하나의 최대 크기입니다. 전체 디스크 상한은 아닙니다.
+    max_block_bytes: 5368709120
 
 metrics_generator:
   registry:

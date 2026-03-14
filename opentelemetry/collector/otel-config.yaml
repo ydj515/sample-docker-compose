@@ -5,12 +5,12 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: ${env:OTEL_COLLECTOR_GRPC_ADDR}
+        endpoint: 0.0.0.0:4317
         # tls: # tls 미사용시 tls부터 주석
         #   cert_file: /etc/otelcol-contrib/server.crt
         #   key_file: /etc/otelcol-contrib/server.key
       http:
-        endpoint: ${env:OTEL_COLLECTOR_HTTP_ADDR}
+        endpoint: 0.0.0.0:4318
         # react 같은 client service에서 적용할때 사용
         # cors:
         #   allowed_origins:
@@ -18,21 +18,21 @@ receivers:
 
 exporters:
   debug:
-  otlp:
-    endpoint: "http://tempo:4317"
-    # endpoint: "http://jaeger:4317"
+  # Compose 내부 서비스명 기준 exporter 엔드포인트입니다.
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
     tls:
       insecure: true
-  otlp/jaeger: # Jaeger supports OTLP directly. The default port for OTLP/gRPC is 4317
-    endpoint: http://jaeger:${env:JAEGER_EXPORTER_PORT}
+  otlp_grpc/jaeger: # Jaeger supports OTLP directly. The default port for OTLP/gRPC is 4317
+    endpoint: jaeger:4317
     tls:
       insecure: true
-  otlphttp/prometheus:
-    endpoint: "http://${env:PROMETHEUS_ADDR}/api/v1/otlp"
+  otlp_http/prometheus:
+    endpoint: http://prometheus:9090/api/v1/otlp
     tls:
       insecure: true
-  loki:
-    endpoint: http://loki:3100/loki/api/v1/push
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
 
 processors:
   batch:
@@ -56,16 +56,24 @@ connectors:
       - name: db.statement
 
 service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/jaeger, debug, spanmetrics, otlp]
+      exporters: [otlp_grpc/jaeger, debug, spanmetrics, otlp_grpc/tempo]
     metrics:
       receivers: [otlp, spanmetrics]
       processors: [batch]
-      exporters: [otlphttp/prometheus, debug]
+      exporters: [otlp_http/prometheus, debug]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [debug, loki]
+      exporters: [debug, otlp_http/loki]

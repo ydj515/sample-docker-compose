@@ -1,0 +1,129 @@
+logging {
+  // Alloy 기본값: "info"
+  // 로컬 개발 권장값: "info"
+  level  = "info"
+  // Alloy 기본값: "logfmt"
+  // 로컬 개발 권장값: "logfmt"
+  format = "logfmt"
+}
+
+local.file_match "varlogs" {
+  // Alloy 기본값: 10s
+  // 로컬 개발 권장값: 10s
+  sync_period = "10s"
+  path_targets = [
+    {
+      __path__ = "/var/log/*log",
+      job      = "varlogs",
+    },
+  ]
+}
+
+// local.file_match "wildfly" {
+//   path_targets = [
+//     {
+//       __path__ = "/var/log/wildfly/*.log",
+//       job      = "wildflylogs",
+//     },
+//   ]
+// }
+
+// local.file_match "server" {
+//   path_targets = [
+//     {
+//       __path__ = "/var/log/server/*.log",
+//       job      = "server",
+//     },
+//   ]
+// }
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// loki.process "server" {
+//   forward_to = [loki.write.default.receiver]
+//
+//   stage.multiline {
+//     firstline = "^Error:"
+//   }
+//
+//   stage.match {
+//     selector = "{job=\"server\"}"
+//
+//     stage.regex {
+//       expression = "^.*(?P<level>(error|Error|ERROR)).*$"
+//     }
+//
+//     stage.labels {
+//       values = {
+//         level = "level",
+//       }
+//     }
+//   }
+// }
+
+loki.source.file "varlogs" {
+  targets    = local.file_match.varlogs.targets
+  forward_to = [loki.write.default.receiver]
+
+  // Alloy 기본값: false
+  // 로컬 개발 권장값: false
+  // 기존 Promtail과 비슷하게 첫 수집 시 파일 처음부터 읽습니다.
+  tail_from_end = false
+
+  file_watch {
+    // Alloy 기본값: 250ms
+    // 로컬 개발 권장값: 250ms
+    min_poll_frequency = "250ms"
+    // Alloy 기본값: 250ms
+    // 로컬 개발 권장값: 250ms
+    max_poll_frequency = "250ms"
+  }
+
+}
+
+// loki.source.file "wildfly" {
+//   targets    = local.file_match.wildfly.targets
+//   forward_to = [loki.write.default.receiver]
+// }
+
+// loki.source.file "server" {
+//   targets    = local.file_match.server.targets
+//   forward_to = [loki.process.server.receiver]
+// }
+
+// 나중에 Alloy가 OTLP 로그/메트릭/트레이스 수신도 맡아야 할 때를 위한 예시입니다.
+// 현재는 비활성화 상태이며, 지금 스택의 권장 경로는 파일 로그만 Alloy가 수집해서 Loki로 직접 보내는 구조입니다.
+//
+// otelcol.receiver.otlp "future" {
+//   grpc {
+//     endpoint = "0.0.0.0:4317"
+//   }
+//
+//   http {
+//     endpoint = "0.0.0.0:4318"
+//   }
+//
+//   output {
+//     logs = [otelcol.processor.batch.future.input]
+//   }
+// }
+//
+// otelcol.processor.batch "future" {
+//   output {
+//     logs = [otelcol.exporter.otlp.future.input]
+//   }
+// }
+//
+// otelcol.exporter.otlp "future" {
+//   client {
+//     endpoint = "otel-collector:4317"
+//
+//     tls {
+//       insecure = true
+//     }
+//   }
+// }

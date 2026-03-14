@@ -16,12 +16,48 @@ common:
     kvstore:
       store: inmemory
 
+ingester:
+  # 로컬 개발 권장값: 30m
+  # Loki 기본값: 30m
+  chunk_idle_period: 30m
+  # 로컬 개발 권장값: 1572864(약 1.5MB)
+  # Grafana Loki 권장값: 1572864
+  chunk_target_size: 1572864
+  # 로컬 개발 권장값: snappy
+  # Grafana Loki 권장 압축 방식: snappy
+  chunk_encoding: snappy
+  # 로컬 개발 권장값: 2h
+  # Loki 기본값: 2h
+  max_chunk_age: 2h
+
 query_range: # query range config
   results_cache:
     cache:
       embedded_cache:
         enabled: true
+        # Loki embedded cache 기본값: 100
+        # 로컬 개발 권장 기본값: 100
         max_size_mb: 100
+
+compactor:
+  working_directory: /tmp/loki/retention
+  # 로컬 개발 기본값: 10m
+  # compaction 주기를 너무 촘촘하게 잡으면 디스크 I/O가 잦아질 수 있습니다.
+  compaction_interval: 10m
+  retention_enabled: true
+  # 로컬 개발 기본값: 2h
+  # retention 대상 블록을 즉시 지우지 않고 안전하게 유예하는 시간입니다.
+  retention_delete_delay: 2h
+  delete_request_store: filesystem
+
+limits_config:
+  # 로컬 개발 권장 기본값: 168h(7d)
+  # Loki 기본 동작: retention 미설정 시 무기한 보관
+  # 로그 보존 기간입니다.
+  retention_period: 168h
+  # Loki 기본값: 0s(제한 없음)
+  # 조회 가능한 최대 lookback도 retention과 맞춰 둡니다.
+  max_query_lookback: 168h
 
 schema_config: # lock schema config
   configs:
