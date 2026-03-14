@@ -1,102 +1,71 @@
 # docker-compose-elk
 
-elk docker compose
-
-## 개발환경
+운영형에 더 가까운 ELK + Grafana 예제입니다. Elasticsearch는 역할을 분리한 클러스터로 구성하고, `setup` 컨테이너가 인증서와 서비스 계정을 자동으로 준비합니다.
 
 ## 구성
 
-- `es01~03`: Elasticsearch 클러스터 구성 노드 (서로 통신 및 데이터 샤딩/복제)입니다. 클러스터를 구성하며 cluster.initial_master_nodes로 초기화됩니다.
-- `Kibana` : Elasticsearch에서 데이터를 시각화하는 UI입니다.
-- `Grafana`	Elasticsearch를 메트릭 소스로 사용하는 dashboard입니다.
-- `Metricbeat` : 시스템/컨테이너 상태를 수집해 Elasticsearch로 전송합니다.
-- `Logstash` : 로그 수집 파이프라인 처리 및 Elasticsearch로 전송합니다.
+- `setup-certs`: 노드 간 transport TLS 인증서를 생성합니다.
+- `es-master01~03`: 전용 마스터 노드 3개입니다.
+- `es-data01~02`: 전용 데이터 노드 2개입니다.
+- `es-ingest01`: 전용 ingest/coordinating 노드입니다. 외부 API 진입점도 맡습니다.
+- `setup-users`: `kibana_system`, `logstash_internal`, `metricbeat_internal`, `grafana_internal` 계정을 자동 생성/갱신합니다.
+- `kibana`: `kibana_system` 계정으로 클러스터에 연결됩니다.
+- `logstash`: `logstash_internal` 계정으로 로그를 적재합니다.
+- `metricbeat`: `metricbeat_internal` 계정으로 Stack/Docker 메트릭을 수집합니다.
+  - 전용 master 노드가 있는 클러스터를 고려해 `scope: cluster`를 사용합니다.
+- `grafana`: `grafana_internal` 계정으로 Elasticsearch datasource를 사용합니다.
 
 ```mermaid
 graph TD
     subgraph "Elasticsearch Cluster"
-        es01["es01<br>9200/9300"]
-        es02["es02<br>9301"]
-        es03["es03<br>9302"]
+        m1["es-master01"]
+        m2["es-master02"]
+        m3["es-master03"]
+        d1["es-data01"]
+        d2["es-data02"]
+        i1["es-ingest01"]
     end
 
-    subgraph "Monitoring Tools"
-        kibana["kibana<br>5601"]
-        grafana["grafana<br>3000"]
-        metricbeat["metricbeat"]
-    end
+    setup1["setup-certs"] --> m1
+    setup1 --> m2
+    setup1 --> m3
+    setup1 --> d1
+    setup1 --> d2
+    setup1 --> i1
+    setup2["setup-users"] --> i1
 
-    subgraph "Log Ingest"
-        logstash["logstash<br>5044 / 50000 / 9600"]
-    end
-
-    %% Elasticsearch nodes form a cluster
-    es01 -- "Cluster communication" --- es02
-    es01 -- "Cluster communication" --- es03
-    es02 -- "Cluster communication" --- es03
-
-    %% Kibana queries Elasticsearch for logs/metrics
-    kibana -- "Query & visualize data" --> es01
-    kibana -- "Query & visualize data" --> es02
-    kibana -- "Query & visualize data" --> es03
-
-    %% Grafana uses Elasticsearch as a data source
-    grafana -- "Dashboard & metric queries" --> es01
-    grafana -- "Dashboard & metric queries" --> es02
-    grafana -- "Dashboard & metric queries" --> es03
-
-    %% Metricbeat collects host/container metrics and sends to ES
-    metricbeat -- "Push system metrics" --> es01
-    metricbeat -- "Push system metrics" --> es02
-    metricbeat -- "Push system metrics" --> es03
-
-    %% Logstash ingests data and ships to ES
-    logstash -- "Ship parsed logs" --> es01
-    logstash -- "Ship parsed logs" --> es02
-    logstash -- "Ship parsed logs" --> es03
+    kibana["kibana"] --> i1
+    logstash["logstash"] --> i1
+    metricbeat["metricbeat"] --> i1
+    grafana["grafana"] --> i1
 ```
 
-
-
-es01, es02, es03은 클러스터를 구성하며 cluster.initial_master_nodes로 초기화됨.
-
-Kibana, Metricbeat, Logstash, Grafana는 모두 Elasticsearch에 의존.
-
-Metricbeat는 시스템/컨테이너 메트릭을 Elasticsearch로 보냄.
-
-Grafana는 Elasticsearch를 데이터 소스로 시각화 가능.
-
-
-## command
-
-### 클러스터의 모든 노드 상태 확인
+## 시작 방법
 
 ```bash
-curl -X GET http://localhost:9200/_cat/nodes?v
+cd elk
+cp .env.example .env
+docker compose up -d --build
 ```
 
-### Elasticsearch 클러스터의 전반적인 health 확인
+## 샘플 로그 테스트
+
+텍스트 로그와 JSON 로그 예제를 함께 넣어 두었습니다.
 
 ```bash
-curl -X GET http://localhost:9200/_cluster/health?pretty
+cd elk
+cat testdata/logstash-sample.log | nc localhost 50000
 ```
 
-### 클러스터 내 모든 인덱스의 상태, 크기, 문서 수 등을 출력
+## 기본 버전
 
-```bash
-curl -X GET http://localhost:9200/_cat/indices?v
-```
+- Elastic Stack: `9.3.1`
+- Grafana OSS: `11.5.2`
 
-### 클러스터의 영구 설정(persistent settings)을 변경
+## 운영 메모
 
-> 이 설정은 클러스터가 재시작되어도 유지됩니다. 인덱스가 존재하지 않으면 자동 생성되도록 허용하는 설정입니다. default는 `false`로 개발 편의상 `true`로 설정합니다.
-
-```bash
-curl -X PUT "http://localhost:9200/_cluster/settings" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "persistent": {
-      "index.auto_create_index": "true"
-    }
-  }'
-```
+- Kibana 로그인은 `elastic` 사용자와 `.env`의 `ELASTIC_PASSWORD`를 사용하면 됩니다.
+- 운영에서는 HTTP 레이어도 TLS를 켜는 편이 안전하지만, 현재 예제는 내부 Docker 네트워크 간 단순화를 위해 transport TLS만 켭니다.
+- ingest 노드는 외부 진입점 역할을 하고, master/data 역할은 분리했습니다.
+- 기본 메모리 값은 Docker Desktop 8GB 전후 환경도 고려해 보수적으로 잡았습니다.
+- Metricbeat 기본 수집 주기는 `30s`로 두는 편이 운영형 예제에서 더 안정적입니다.

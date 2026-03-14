@@ -1,7 +1,9 @@
----
-## Default Logstash configuration from Logstash base image.
-## https://github.com/elastic/logstash/blob/main/docker/data/logstash/config/logstash-full.yml
-#
-http.host: 0.0.0.0
-
 node.name: logstash
+
+api.http.host: 0.0.0.0
+api.http.port: ${LOGSTASH_API_PORT}
+
+# 로컬/테스트 환경에서는 config reload를 켜 두는 편이 빠릅니다.
+config.reload.automatic: true
+pipeline.ordered: auto
+pipeline.workers: ${LOGSTASH_PIPELINE_WORKERS}

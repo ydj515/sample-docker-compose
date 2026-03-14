@@ -1,7 +1,7 @@
-cluster.name: es-docker-cluster
 network.host: 0.0.0.0
 
+# 기본 라이선스는 basic으로 유지합니다.
 xpack.license.self_generated.type: basic
-xpack.security.enabled: true
-xpack.security.transport.ssl.enabled: true
-# xpack.watcher.enabled: true # basic에서 지원 x
+
+# 단일 노드 개발 환경에서는 이름 없는 삭제를 막아두는 편이 안전합니다.
+action.destructive_requires_name: true

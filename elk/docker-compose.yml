@@ -1,182 +1,329 @@
+name: ${COMPOSE_PROJECT_NAME:-elk}
+
+x-elasticsearch-common: &elasticsearch-common
+  build:
+    context: ./elasticsearch
+    args:
+      ELASTICSEARCH_VERSION: ${ELASTIC_VERSION:-9.3.1} # 기본값: 9.3.1
+      ELASTICSEARCH_IMAGE: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch} # 기본값: 공식 Elasticsearch 이미지
+  restart: unless-stopped
+  depends_on:
+    setup-certs:
+      condition: service_completed_successfully
+  ulimits:
+    memlock:
+      soft: -1
+      hard: -1
+  volumes:
+    - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    - elastic_certs:/usr/share/elasticsearch/config/certs
+  networks:
+    - elastic
+
 services:
-  es01:
-    build:
-      context: elasticsearch/
-      args:
-        ELASTICSEARCH_VERSION: ${ELASTICSEARCH_VERSION}
-        ELASTICSEARCH_IMAGE: ${ELASTICSEARCH_IMAGE}
-    container_name: es01
-    environment:
-      node.name: es01
-      discovery.seed_hosts : es02,es03
-      cluster.initial_master_nodes : es01,es02,es03
-      bootstrap.memory_lock : true
-      ES_JAVA_OPTS : -Xms512m -Xmx512m
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+  setup-certs:
+    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch}:${ELASTIC_VERSION:-9.3.1}
+    user: "0"
+    command: ["/bin/bash", "/usr/local/bin/generate-certs.sh"]
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - data01:/usr/share/elasticsearch/data:Z
-    ports:
-      - 9200:9200
-      - 9300:9300
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - ./setup/generate-certs.sh:/usr/local/bin/generate-certs.sh:ro
     networks:
       - elastic
 
-  es02:
-    build:
-      context: elasticsearch/
-      args:
-        ELASTICSEARCH_VERSION: ${ELASTICSEARCH_VERSION}
-        ELASTICSEARCH_IMAGE: ${ELASTICSEARCH_IMAGE}
-    container_name: es02
+  es-master01:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_MASTER_MEMORY_LIMIT:-1g} # 기본값: 1g
     environment:
-      node.name: es02
-      discovery.seed_hosts: es01,es03
-      cluster.initial_master_nodes: es01,es02,es03
-      bootstrap.memory_lock: true
-      ES_JAVA_OPTS: -Xms512m -Xmx512m
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      TZ: ${TZ:-Asia/Seoul} # 기본값: Asia/Seoul
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster} # 기본값: elk-prod-cluster
+      node.name: es-master01
+      node.roles: master # 기본값: master 전용
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      cluster.initial_master_nodes: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false" # 기본값: 내부 네트워크에서는 false
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-master01/es-master01.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-master01/es-master01.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_MASTER_HEAP_SIZE:-512m} -Xmx${ES_MASTER_HEAP_SIZE:-512m} # 기본값: 512m
     volumes:
       - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - data02:/usr/share/elasticsearch/data:Z
-    ports:
-      - 9301:9300
-    networks:
-      - elastic
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_master01_data:/usr/share/elasticsearch/data
 
-  es03:
-    build:
-      context: elasticsearch/
-      args:
-        ELASTICSEARCH_VERSION: ${ELASTICSEARCH_VERSION}
-        ELASTICSEARCH_IMAGE: ${ELASTICSEARCH_IMAGE}
-    container_name: es03
+  es-master02:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_MASTER_MEMORY_LIMIT:-1g}
     environment:
-      node.name: es03
-      discovery.seed_hosts: es01,es02
-      cluster.initial_master_nodes: es01,es02,es03
-      bootstrap.memory_lock: true
-      ES_JAVA_OPTS: -Xms512m -Xmx512m
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
+      TZ: ${TZ:-Asia/Seoul}
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster}
+      node.name: es-master02
+      node.roles: master
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      cluster.initial_master_nodes: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-master02/es-master02.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-master02/es-master02.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_MASTER_HEAP_SIZE:-512m} -Xmx${ES_MASTER_HEAP_SIZE:-512m}
     volumes:
       - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-      - data03:/usr/share/elasticsearch/data:Z
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_master02_data:/usr/share/elasticsearch/data
+
+  es-master03:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_MASTER_MEMORY_LIMIT:-1g}
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster}
+      node.name: es-master03
+      node.roles: master
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      cluster.initial_master_nodes: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-master03/es-master03.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-master03/es-master03.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_MASTER_HEAP_SIZE:-512m} -Xmx${ES_MASTER_HEAP_SIZE:-512m}
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_master03_data:/usr/share/elasticsearch/data
+
+  es-data01:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_DATA_MEMORY_LIMIT:-1536m} # 기본값: 1536m
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster}
+      node.name: es-data01
+      node.roles: data_hot,data_content # 기본값: hot/content 데이터 노드
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-data01/es-data01.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-data01/es-data01.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_DATA_HEAP_SIZE:-768m} -Xmx${ES_DATA_HEAP_SIZE:-768m} # 기본값: 768m
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_data01_data:/usr/share/elasticsearch/data
+
+  es-data02:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_DATA_MEMORY_LIMIT:-1536m}
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster}
+      node.name: es-data02
+      node.roles: data_hot,data_content
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-data02/es-data02.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-data02/es-data02.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_DATA_HEAP_SIZE:-768m} -Xmx${ES_DATA_HEAP_SIZE:-768m}
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_data02_data:/usr/share/elasticsearch/data
+
+  es-ingest01:
+    <<: *elasticsearch-common
+    mem_limit: ${ES_INGEST_MEMORY_LIMIT:-1g} # 기본값: 1g
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      cluster.name: ${ELASTIC_CLUSTER_NAME:-elk-prod-cluster}
+      node.name: es-ingest01
+      node.roles: ingest,remote_cluster_client # 기본값: ingest/coordinating 전용
+      discovery.seed_hosts: es-master01,es-master02,es-master03
+      bootstrap.memory_lock: "true"
+      xpack.security.enabled: "true"
+      xpack.security.http.ssl.enabled: "false"
+      xpack.security.transport.ssl.enabled: "true"
+      xpack.security.transport.ssl.verification_mode: certificate
+      xpack.security.transport.ssl.key: /usr/share/elasticsearch/config/certs/es-ingest01/es-ingest01.key
+      xpack.security.transport.ssl.certificate: /usr/share/elasticsearch/config/certs/es-ingest01/es-ingest01.crt
+      xpack.security.transport.ssl.certificate_authorities: /usr/share/elasticsearch/config/certs/ca/ca.crt
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      ES_JAVA_OPTS: -Xms${ES_INGEST_HEAP_SIZE:-512m} -Xmx${ES_INGEST_HEAP_SIZE:-512m} # 기본값: 512m
     ports:
-      - 9302:9300
+      - "${ELASTICSEARCH_PORT:-9200}:9200" # 기본값: 9200
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - elastic_certs:/usr/share/elasticsearch/config/certs
+      - es_ingest01_data:/usr/share/elasticsearch/data
+
+  setup-users:
+    image: ${ELASTICSEARCH_IMAGE:-docker.elastic.co/elasticsearch/elasticsearch}:${ELASTIC_VERSION:-9.3.1}
+    restart: "no"
+    depends_on:
+      - es-master01
+      - es-master02
+      - es-master03
+      - es-data01
+      - es-data02
+      - es-ingest01
+    command: ["/bin/bash", "/usr/local/bin/bootstrap-users.sh"]
+    environment:
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-changeme}
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme_kibana}
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-changeme_logstash}
+      METRICBEAT_INTERNAL_PASSWORD: ${METRICBEAT_INTERNAL_PASSWORD:-changeme_metricbeat}
+      GRAFANA_INTERNAL_PASSWORD: ${GRAFANA_INTERNAL_PASSWORD:-changeme_grafana}
+      LOGSTASH_INDEX_PREFIX: ${LOGSTASH_INDEX_PREFIX:-logstash}
+      GRAFANA_LOG_INDEX_PATTERN: ${GRAFANA_LOG_INDEX_PATTERN:-logstash-*}
+      GRAFANA_METRIC_INDEX_PATTERN: ${GRAFANA_METRIC_INDEX_PATTERN:-metricbeat-*}
+    volumes:
+      - ./setup/bootstrap-users.sh:/usr/local/bin/bootstrap-users.sh:ro
     networks:
       - elastic
 
   kibana:
-    container_name: kibana
-    image: ${KIBANA_IMAGE}:${ELASTICSEARCH_VERSION}
-    environment:
-      SERVER_NAME: kibana
-      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
-    ports:
-      - 5601:5601
-    volumes:
-      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+    image: ${KIBANA_IMAGE:-docker.elastic.co/kibana/kibana}:${ELASTIC_VERSION:-9.3.1} # 기본값: 공식 Kibana 이미지
+    restart: unless-stopped
     depends_on:
-      - es01
-      - es02
-      - es03
+      setup-users:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-Asia/Seoul} # 기본값: Asia/Seoul
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://es-ingest01:9200} # 기본값: ingest 노드 엔드포인트
+      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-changeme_kibana} # 기본값: 예시값, 반드시 변경 권장
+      SERVER_PUBLICBASEURL: ${KIBANA_PUBLIC_BASE_URL:-http://localhost:5601} # 기본값: http://localhost:5601
+      KIBANA_ENCRYPTION_KEY: ${KIBANA_ENCRYPTION_KEY:-change-this-to-a-random-32-char-string} # 기본값: 예시값, 32자 이상 권장
+    ports:
+      - "${KIBANA_PORT:-5601}:5601" # 기본값: 5601
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - kibana_data:/usr/share/kibana/data
     networks:
       - elastic
 
   logstash:
-    container_name: logstash
-    image: ${LOGSTASH_IMAGE}:${ELASTICSEARCH_VERSION}
-    volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro,Z
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro,Z
-    ports:
-      - 5044:5044
-      - 50000:50000/tcp
-      - 50000:50000/udp
-      - 9600:9600
-    environment:
-      LS_JAVA_OPTS: -Xms256m -Xmx256m
-      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
+    image: ${LOGSTASH_IMAGE:-docker.elastic.co/logstash/logstash}:${ELASTIC_VERSION:-9.3.1} # 기본값: 공식 Logstash 이미지
+    restart: unless-stopped
     depends_on:
-      - es01
-      - es02
-      - es03
+      setup-users:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://es-ingest01:9200}
+      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-changeme_logstash}
+      LOGSTASH_BEATS_PORT: ${LOGSTASH_BEATS_PORT:-5044} # 기본값: 5044
+      LOGSTASH_TCP_PORT: ${LOGSTASH_TCP_PORT:-50000} # 기본값: 50000
+      LOGSTASH_API_PORT: ${LOGSTASH_API_PORT:-9600} # 기본값: 9600
+      LOGSTASH_INDEX_PREFIX: ${LOGSTASH_INDEX_PREFIX:-logstash} # 기본값: logstash
+      LOGSTASH_PIPELINE_WORKERS: ${LOGSTASH_PIPELINE_WORKERS:-2} # 기본값: 2
+      LS_JAVA_OPTS: -Xms${LOGSTASH_HEAP_SIZE:-512m} -Xmx${LOGSTASH_HEAP_SIZE:-512m} # 기본값: 512m
+    ports:
+      - "${LOGSTASH_BEATS_PORT:-5044}:5044"
+      - "${LOGSTASH_TCP_PORT:-50000}:50000/tcp"
+      - "${LOGSTASH_TCP_PORT:-50000}:50000/udp"
+      - "${LOGSTASH_API_PORT:-9600}:9600"
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./testdata:/usr/share/logstash/testdata:ro
     networks:
       - elastic
 
   metricbeat:
-    container_name: metricbeat
-    image: ${METRICBEAT_IMAGE}:${ELASTICSEARCH_VERSION}
+    image: ${METRICBEAT_IMAGE:-docker.elastic.co/beats/metricbeat}:${ELASTIC_VERSION:-9.3.1} # 기본값: 공식 Metricbeat 이미지
+    restart: unless-stopped
     user: root
-    command:
-      # Log to stderr.
-      - -e
-      # Disable config file permissions checks. Allows mounting
-      # 'config/metricbeat.yml' even if it's not owned by root.
-      # see: https://www.elastic.co/guide/en/beats/libbeat/current/config-file-permissions.html
-      - --strict.perms=false
-      # Mount point of the host’s filesystem. Required to monitor the host
-      # from within a container.
-      - --system.hostfs=/hostfs
-    volumes:
-      - ./metricbeat/config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro,Z
-      - type: bind
-        source: /
-        target: /hostfs
-        read_only: true
-      - type: bind
-        source: /sys/fs/cgroup
-        target: /hostfs/sys/fs/cgroup
-        read_only: true
-      - type: bind
-        source: /proc
-        target: /hostfs/proc
-        read_only: true
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-    environment:
-      METRICBEAT_INTERNAL_PASSWORD: ${METRICBEAT_INTERNAL_PASSWORD:-}
-      MONITORING_INTERNAL_PASSWORD: ${MONITORING_INTERNAL_PASSWORD:-}
-      BEATS_SYSTEM_PASSWORD: ${BEATS_SYSTEM_PASSWORD:-}
     depends_on:
-      - es01
-      - es02
-      - es03
+      setup-users:
+        condition: service_completed_successfully
+      kibana:
+        condition: service_started
+      logstash:
+        condition: service_started
+    command:
+      - -e
+      - --strict.perms=false
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://es-ingest01:9200}
+      METRICBEAT_INTERNAL_PASSWORD: ${METRICBEAT_INTERNAL_PASSWORD:-changeme_metricbeat}
+      KIBANA_INTERNAL_URL: ${KIBANA_INTERNAL_URL:-http://kibana:5601}
+      LOGSTASH_MONITORING_URL: ${LOGSTASH_MONITORING_URL:-http://logstash:9600}
+      METRICBEAT_HTTP_PORT: ${METRICBEAT_HTTP_PORT:-5066} # 기본값: 5066
+      METRICBEAT_DOCKER_PERIOD: ${METRICBEAT_DOCKER_PERIOD:-30s} # 기본값: 30s
+      METRICBEAT_STACK_PERIOD: ${METRICBEAT_STACK_PERIOD:-30s} # 기본값: 30s
+    ports:
+      - "${METRICBEAT_HTTP_PORT:-5066}:5066"
+    volumes:
+      - ./metricbeat/config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - elastic
 
   grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
+    image: ${GRAFANA_IMAGE:-grafana/grafana-oss}:${GRAFANA_VERSION:-11.5.2} # 기본값: 11.5.2
+    restart: unless-stopped
+    depends_on:
+      setup-users:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin} # 기본값: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin1234} # 기본값: admin1234, 반드시 변경 권장
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000} # 기본값: http://localhost:3000
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://es-ingest01:9200}
+      GRAFANA_INTERNAL_PASSWORD: ${GRAFANA_INTERNAL_PASSWORD:-changeme_grafana}
+      GRAFANA_LOG_INDEX_PATTERN: ${GRAFANA_LOG_INDEX_PATTERN:-logstash-*} # 기본값: logstash-*
+      GRAFANA_METRIC_INDEX_PATTERN: ${GRAFANA_METRIC_INDEX_PATTERN:-metricbeat-*} # 기본값: metricbeat-*
     ports:
-      - 3000:3000
+      - "${GRAFANA_PORT:-3000}:3000" # 기본값: 3000
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
     networks:
       - elastic
-    volumes:
-      - grafana_data:/var/lib/grafana
 
 volumes:
-  data01:
+  elastic_certs:
     driver: local
-  data02:
+  es_master01_data:
     driver: local
-  data03:
+  es_master02_data:
     driver: local
-  kibana:
+  es_master03_data:
+    driver: local
+  es_data01_data:
+    driver: local
+  es_data02_data:
+    driver: local
+  es_ingest01_data:
+    driver: local
+  kibana_data:
     driver: local
   grafana_data:
     driver: local
