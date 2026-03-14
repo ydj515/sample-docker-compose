@@ -5,6 +5,7 @@
 - apisix : nginx, apisix, etcd, redis, prometheus, grafana
 - elk : elasticsearch logstash, kibana, metricbeat
 - kafka : kRaft cluster, zookeeper cluster, single kafka
+- k6-dashboard : influxdb, grafana, nginx
 - postgresql : postgresql 17
 - opentelemetry : opentelemetryCollector, jaeger, loki, prometheus, tempo, promtail, grafana
 - redis : redis-single, redis-sentinel, redis-cluster
