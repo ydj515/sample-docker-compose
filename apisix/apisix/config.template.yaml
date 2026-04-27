@@ -1,0 +1,72 @@
+apisix:
+  node_listen: ${APISIX_NODE_LISTEN}
+  enable_admin: true
+  enable_ipv6: ${APISIX_ENABLE_IPV6}
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: ${APISIX_CONTROL_API_PORT}
+  extra_lua_path: "/opt/?.lua"
+  logger:
+    level: "${APISIX_LOG_LEVEL}"
+
+deployment:
+  admin:
+    allow_admin:
+      - "${APISIX_ADMIN_ALLOW_CIDR}"
+    admin_key:
+      - name: "admin"
+        key: "${APISIX_ADMIN_KEY}"
+        role: admin
+      - name: "viewer"
+        key: "${APISIX_VIEWER_KEY}"
+        role: viewer
+  etcd:
+    host:
+      - "${APISIX_ETCD_HOST_1}"
+      - "${APISIX_ETCD_HOST_2}"
+      - "${APISIX_ETCD_HOST_3}"
+    timeout: ${APISIX_ETCD_TIMEOUT}
+
+plugins:
+  - active_health_control
+  - prometheus
+  - dynamic_throttling
+  - limit-req
+  - response-rewrite
+  - serverless-pre-function
+  - ext-plugin-pre-req
+  - ext-plugin-post-req
+
+ext-plugin:
+  cmd:
+    [
+      "java",
+      "-Xms${APISIX_JAVA_XMS}",
+      "-Xmx${APISIX_JAVA_XMX}",
+      "-jar",
+      "/usr/local/apisix/libs/apisix-demo-jar-with-dependencies.jar"
+    ]
+
+plugin_attr:
+  active_health_control:
+    admin_api_url: "${APISIX_SELF_ADMIN_API_URL}"
+    admin_api_token: "${APISIX_ADMIN_KEY}"
+    interval: ${APISIX_HEALTH_CHECK_INTERVAL}
+    health_check_path: "${APISIX_HEALTH_CHECK_PATH}"
+    expected_status: ${APISIX_HEALTH_EXPECTED_STATUS}
+    rewrite_code: ${APISIX_HEALTH_REWRITE_CODE}
+    rewrite_body: '${APISIX_HEALTH_REWRITE_BODY}'
+  prometheus:
+    export_addr:
+      ip: "0.0.0.0"
+      port: ${APISIX_PROMETHEUS_EXPORT_PORT}
+    enable_export_server: true
+  limit-req:
+
+nginx_config:
+  http:
+    enable_access_log: true
+    lua_shared_dict:
+      upstream-healthcheck: ${APISIX_UPSTREAM_HEALTHCHECK_DICT_SIZE}
+  error_log_level: "${APISIX_LOG_LEVEL}"

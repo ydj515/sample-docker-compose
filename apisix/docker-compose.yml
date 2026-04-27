@@ -1,188 +1,312 @@
+name: ${COMPOSE_PROJECT_NAME:-apisix-local}
+
+x-common-logging: &common-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-apisix-base: &apisix-base
+  <<: *common-logging
+  env_file:
+    - ./.env
+  build:
+    context: .
+    args:
+      APISIX_BASE_IMAGE: ${APISIX_BASE_IMAGE}
+  restart: unless-stopped
+  environment:
+    TZ: ${TZ}
+    APISIX_TEMPLATE_PATH: /usr/local/apisix/conf/config-template.yaml
+    APISIX_OUTPUT_PATH: /usr/local/apisix/conf/config.yaml
+  volumes:
+    - ./apisix/config.template.yaml:/usr/local/apisix/conf/config-template.yaml:ro
+    - ./apisix/plugins:/opt/apisix/plugins:ro
+    - ./apisix/libs:/usr/local/apisix/libs:ro
+    - ./apisix/override/util.lua:/usr/local/apisix/apisix/plugins/limit-req/util.lua:ro
+  depends_on:
+    redis:
+      condition: service_started
+    etcd1:
+      condition: service_started
+    etcd2:
+      condition: service_started
+    etcd3:
+      condition: service_started
+  networks:
+    - apisix_network
+
+x-etcd-base: &etcd-base
+  <<: *common-logging
+  image: ${ETCD_IMAGE}
+  restart: unless-stopped
+  environment:
+    TZ: ${TZ}
+    ETCD_ENABLE_V2: "true"
+    ALLOW_NONE_AUTHENTICATION: "yes"
+    ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+    ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+    ETCD_INITIAL_CLUSTER_STATE: ${ETCD_INITIAL_CLUSTER_STATE}
+    ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_INITIAL_CLUSTER_TOKEN}
+    ETCD_AUTO_COMPACTION_MODE: ${ETCD_AUTO_COMPACTION_MODE}
+    ETCD_AUTO_COMPACTION_RETENTION: ${ETCD_AUTO_COMPACTION_RETENTION}
+    ETCD_SNAPSHOT_COUNT: ${ETCD_SNAPSHOT_COUNT}
+    ETCD_HEARTBEAT_INTERVAL: ${ETCD_HEARTBEAT_INTERVAL}
+    ETCD_ELECTION_TIMEOUT: ${ETCD_ELECTION_TIMEOUT}
+    ETCD_QUOTA_BACKEND_BYTES: ${ETCD_QUOTA_BACKEND_BYTES}
+  networks:
+    - apisix_network
+
 services:
-  nginx:
-    image: nginx:1.27.4
-    container_name: nginx
+  backend:
+    <<: *common-logging
+    image: ${BACKEND_IMAGE}
+    container_name: ${BACKEND_CONTAINER_NAME}
+    restart: unless-stopped
     ports:
-      - "80:80"
+      - "${BACKEND_PORT}:${BACKEND_INTERNAL_PORT}"
+    volumes:
+      - ./backend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O - "http://127.0.0.1:${BACKEND_INTERNAL_PORT}${BACKEND_HEALTHCHECK_PATH}" >/dev/null 2>&1 || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - apisix_network
+
+  nginx:
+    <<: *common-logging
+    image: ${NGINX_IMAGE}
+    container_name: ${NGINX_CONTAINER_NAME}
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - apisix1
-      - apisix2
+      apisix1:
+        condition: service_started
+      apisix2:
+        condition: service_started
     networks:
       - apisix_network
 
   redis:
-    image: redis:7.4.2
-    container_name: redis
+    <<: *common-logging
+    image: ${REDIS_IMAGE}
+    container_name: ${REDIS_CONTAINER_NAME}
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "${REDIS_APPENDONLY}"
+      - --save
+      - "${REDIS_SAVE_SECONDS}"
+      - "${REDIS_SAVE_CHANGES}"
+      - --maxmemory
+      - "${REDIS_MAXMEMORY}"
+      - --maxmemory-policy
+      - "${REDIS_MAXMEMORY_POLICY}"
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - apisix_network
 
-  etcd:
-    image: bitnami/etcd:3.5.11
-    container_name: etcd
-    volumes:
-      - etcd_data:/bitnami/etcd
+  etcd1:
+    <<: *etcd-base
+    container_name: ${ETCD1_CONTAINER_NAME}
     environment:
+      TZ: ${TZ}
       ETCD_ENABLE_V2: "true"
       ALLOW_NONE_AUTHENTICATION: "yes"
-      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
-      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
-      ETCD_AUTO_COMPACTION_MODE: "revision"
-      ETCD_AUTO_COMPACTION_RETENTION: "100"
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+      ETCD_INITIAL_CLUSTER_STATE: ${ETCD_INITIAL_CLUSTER_STATE}
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_INITIAL_CLUSTER_TOKEN}
+      ETCD_AUTO_COMPACTION_MODE: ${ETCD_AUTO_COMPACTION_MODE}
+      ETCD_AUTO_COMPACTION_RETENTION: ${ETCD_AUTO_COMPACTION_RETENTION}
+      ETCD_SNAPSHOT_COUNT: ${ETCD_SNAPSHOT_COUNT}
+      ETCD_HEARTBEAT_INTERVAL: ${ETCD_HEARTBEAT_INTERVAL}
+      ETCD_ELECTION_TIMEOUT: ${ETCD_ELECTION_TIMEOUT}
+      ETCD_QUOTA_BACKEND_BYTES: ${ETCD_QUOTA_BACKEND_BYTES}
+      ETCD_NAME: etcd1
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd1:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd1:2379
     ports:
-      - "2379:2379/tcp"
-    networks:
-      - apisix_network
+      - "${ETCD1_CLIENT_PORT}:2379"
+    volumes:
+      - etcd1_data:/bitnami/etcd
 
-  # etcd1:
-  #   image: bitnami/etcd:3.5.11
-  #   container_name: etcd1
-  #   environment:
-  #     - ALLOW_NONE_AUTHENTICATION=yes
-  #     - ETCD_NAME=etcd1
-  #     - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd1:2380
-  #     - ETCD_ADVERTISE_CLIENT_URLS=http://etcd1:2379
-  #     - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
-  #     - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-  #     - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
-  #     - ETCD_INITIAL_CLUSTER_STATE=new
-  #     - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
-  #   volumes:
-  #     - etcd1_data:/bitnami/etcd
-  #   ports:
-  #     - "2379:2379"
-  #   networks:
-  #     - apisix_network
+  etcd2:
+    <<: *etcd-base
+    container_name: ${ETCD2_CONTAINER_NAME}
+    environment:
+      TZ: ${TZ}
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+      ETCD_INITIAL_CLUSTER_STATE: ${ETCD_INITIAL_CLUSTER_STATE}
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_INITIAL_CLUSTER_TOKEN}
+      ETCD_AUTO_COMPACTION_MODE: ${ETCD_AUTO_COMPACTION_MODE}
+      ETCD_AUTO_COMPACTION_RETENTION: ${ETCD_AUTO_COMPACTION_RETENTION}
+      ETCD_SNAPSHOT_COUNT: ${ETCD_SNAPSHOT_COUNT}
+      ETCD_HEARTBEAT_INTERVAL: ${ETCD_HEARTBEAT_INTERVAL}
+      ETCD_ELECTION_TIMEOUT: ${ETCD_ELECTION_TIMEOUT}
+      ETCD_QUOTA_BACKEND_BYTES: ${ETCD_QUOTA_BACKEND_BYTES}
+      ETCD_NAME: etcd2
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd2:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd2:2379
+    ports:
+      - "${ETCD2_CLIENT_PORT}:2379"
+    volumes:
+      - etcd2_data:/bitnami/etcd
 
-  # etcd2:
-  #   image: bitnami/etcd:3.5.11
-  #   container_name: etcd2
-  #   environment:
-  #     - ALLOW_NONE_AUTHENTICATION=yes
-  #     - ETCD_NAME=etcd2
-  #     - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd2:2380
-  #     - ETCD_ADVERTISE_CLIENT_URLS=http://etcd2:2379
-  #     - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
-  #     - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-  #     - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
-  #     - ETCD_INITIAL_CLUSTER_STATE=new
-  #     - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
-  #   ports:
-  #     - "2380:2379"
-  #   volumes:
-  #     - etcd2_data:/bitnami/etcd
-  #   networks:
-  #     - apisix_network
-
-  # etcd3:
-  #   image: bitnami/etcd:3.5.11
-  #   container_name: etcd3
-  #   environment:
-  #     - ALLOW_NONE_AUTHENTICATION=yes
-  #     - ETCD_NAME=etcd3
-  #     - ETCD_INITIAL_ADVERTISE_PEER_URLS=http://etcd3:2380
-  #     - ETCD_ADVERTISE_CLIENT_URLS=http://etcd3:2379
-  #     - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
-  #     - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
-  #     - ETCD_INITIAL_CLUSTER=etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
-  #     - ETCD_INITIAL_CLUSTER_STATE=new
-  #     - ETCD_INITIAL_CLUSTER_TOKEN=etcd-cluster
-  #   ports:
-  #     - "2381:2379"
-  #   volumes:
-  #     - etcd3_data:/bitnami/etcd
-  #   networks:
-  #     - apisix_network
+  etcd3:
+    <<: *etcd-base
+    container_name: ${ETCD3_CONTAINER_NAME}
+    environment:
+      TZ: ${TZ}
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_CLUSTER: ${ETCD_INITIAL_CLUSTER}
+      ETCD_INITIAL_CLUSTER_STATE: ${ETCD_INITIAL_CLUSTER_STATE}
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_INITIAL_CLUSTER_TOKEN}
+      ETCD_AUTO_COMPACTION_MODE: ${ETCD_AUTO_COMPACTION_MODE}
+      ETCD_AUTO_COMPACTION_RETENTION: ${ETCD_AUTO_COMPACTION_RETENTION}
+      ETCD_SNAPSHOT_COUNT: ${ETCD_SNAPSHOT_COUNT}
+      ETCD_HEARTBEAT_INTERVAL: ${ETCD_HEARTBEAT_INTERVAL}
+      ETCD_ELECTION_TIMEOUT: ${ETCD_ELECTION_TIMEOUT}
+      ETCD_QUOTA_BACKEND_BYTES: ${ETCD_QUOTA_BACKEND_BYTES}
+      ETCD_NAME: etcd3
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd3:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd3:2379
+    ports:
+      - "${ETCD3_CLIENT_PORT}:2379"
+    volumes:
+      - etcd3_data:/bitnami/etcd
 
   apisix1:
-    build: .
-    container_name: apisix1
+    <<: *apisix-base
+    container_name: ${APISIX1_CONTAINER_NAME}
+    environment:
+      TZ: ${TZ}
+      APISIX_TEMPLATE_PATH: /usr/local/apisix/conf/config-template.yaml
+      APISIX_OUTPUT_PATH: /usr/local/apisix/conf/config.yaml
+      APISIX_SELF_ADMIN_API_URL: http://apisix1:9180
     ports:
-      - "${APISIX_ADMIN_API_PORT:-9180}:9180/tcp"
-      - "${APISIX_PORT_9080:-9080}:9080/tcp"
-      - "${APISIX_PORT_9091:-9091}:9091/tcp"
-      - "${APISIX_PORT_9443:-9443}:9443/tcp"
-      - "${APISIX_PORT_9092:-9092}:9092/tcp"
-    volumes:
-      - ./apisix/apisix1.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./apisix/plugins:/opt/apisix/plugins:ro
-      - ./apisix/libs:/usr/local/apisix/libs:ro
-      - ./apisix/override/util.lua:/usr/local/apisix/apisix/plugins/limit-req/util.lua
-    depends_on:
-      - redis
-      - etcd
-    networks:
-      - apisix_network
+      - "${APISIX1_ADMIN_PORT}:9180"
+      - "${APISIX1_GATEWAY_PORT}:${APISIX_NODE_LISTEN}"
+      - "${APISIX1_METRICS_PORT}:${APISIX_PROMETHEUS_EXPORT_PORT}"
+      - "${APISIX1_SSL_PORT}:9443"
+      - "${APISIX1_CONTROL_PORT}:${APISIX_CONTROL_API_PORT}"
 
   apisix2:
-    build: .
-    container_name: apisix2
+    <<: *apisix-base
+    container_name: ${APISIX2_CONTAINER_NAME}
+    environment:
+      TZ: ${TZ}
+      APISIX_TEMPLATE_PATH: /usr/local/apisix/conf/config-template.yaml
+      APISIX_OUTPUT_PATH: /usr/local/apisix/conf/config.yaml
+      APISIX_SELF_ADMIN_API_URL: http://apisix2:9180
     ports:
-      - "${APISIX2_ADMIN_API_PORT:-9280}:9180/tcp"
-      - "${APISIX2_PORT_9080:-9181}:9080/tcp"
-      - "${APISIX2_PORT_9091:-9191}:9091/tcp"
-      - "${APISIX2_PORT_9443:-9543}:9443/tcp"
-      - "${APISIX2_PORT_9092:-9192}:9092/tcp"
+      - "${APISIX2_ADMIN_PORT}:9180"
+      - "${APISIX2_GATEWAY_PORT}:${APISIX_NODE_LISTEN}"
+      - "${APISIX2_METRICS_PORT}:${APISIX_PROMETHEUS_EXPORT_PORT}"
+      - "${APISIX2_SSL_PORT}:9443"
+      - "${APISIX2_CONTROL_PORT}:${APISIX_CONTROL_API_PORT}"
+
+  prometheus:
+    <<: *common-logging
+    image: ${PROMETHEUS_IMAGE}
+    container_name: ${PROMETHEUS_CONTAINER_NAME}
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME}
+      - --storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE}
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
     volumes:
-      - ./apisix/apisix2.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./apisix/plugins:/opt/apisix/plugins:ro
-      - ./apisix/libs:/usr/local/apisix/libs:ro
-      - ./apisix/override/util.lua:/usr/local/apisix/apisix/plugins/limit-req/util.lua
-    depends_on:
-      - redis
-      - etcd
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     networks:
       - apisix_network
 
-  prometheus:
-    image: prom/prometheus:v2.48.0
-    container_name: prometheus
-    restart: always
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      apisix_network:
-
   limit_req_exporter:
-    container_name: limit_req_exporter
+    <<: *common-logging
     build:
       context: ./limit_req_exporter
       dockerfile: Dockerfile_python
-    restart: always
+    container_name: ${LIMIT_REQ_EXPORTER_CONTAINER_NAME}
+    restart: unless-stopped
     depends_on:
-      - apisix1
-      - apisix2
-    ports:
-      - "8000:8000"
+      apisix1:
+        condition: service_started
+      apisix2:
+        condition: service_started
     environment:
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      TZ: ${TZ}
+      ADMIN_API_KEY: ${APISIX_ADMIN_KEY}
+      ADMIN_API_URL: ${LIMIT_REQ_EXPORTER_ADMIN_API_URL}
+      EXPORTER_PORT: ${LIMIT_REQ_EXPORTER_INTERNAL_PORT}
+      SCRAPE_INTERVAL_SECONDS: ${LIMIT_REQ_EXPORTER_INTERVAL_SECONDS}
+      REQUEST_TIMEOUT_SECONDS: ${LIMIT_REQ_EXPORTER_TIMEOUT_SECONDS}
+    ports:
+      - "${LIMIT_REQ_EXPORTER_PORT}:${LIMIT_REQ_EXPORTER_INTERNAL_PORT}"
     networks:
-      apisix_network:
+      - apisix_network
 
   grafana:
-    image: grafana/grafana:11.5.2
-    container_name: grafana-apisix
+    <<: *common-logging
+    image: ${GRAFANA_IMAGE}
+    container_name: ${GRAFANA_CONTAINER_NAME}
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT}:3000"
     environment:
-      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+      TZ: ${TZ}
+      GF_FEATURE_TOGGLES_ENABLE: traceqlEditor
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL}
     volumes:
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_started
     networks:
-      apisix_network:
+      - apisix_network
 
 networks:
   apisix_network:
     driver: bridge
 
 volumes:
-  etcd_data:
+  redis_data:
+    driver: local
+  etcd1_data:
+    driver: local
+  etcd2_data:
+    driver: local
+  etcd3_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local

@@ -1,19 +1,31 @@
-import requests
 import os
-from prometheus_client import Gauge, start_http_server
 import time
+import requests
+from prometheus_client import Gauge, start_http_server
 
-# Prometheus metric 선언
-limit_req_rate = Gauge('apisix_limit_req_rate', 'Current rate limit of limit-req plugin', ['route'])
+limit_req_rate = Gauge(
+    "apisix_limit_req_rate",
+    "Current rate limit of limit-req plugin",
+    ["route"],
+)
 
-# 설정
-ADMIN_API_URL = "http://apisix1:9180/apisix/admin/routes"
-ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
+ADMIN_API_URL = os.environ.get(
+    "ADMIN_API_URL",
+    "http://apisix1:9180/apisix/admin/routes",
+)
+ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "")
+EXPORTER_PORT = int(os.environ.get("EXPORTER_PORT", "8000"))
+SCRAPE_INTERVAL_SECONDS = float(os.environ.get("SCRAPE_INTERVAL_SECONDS", "1"))
+REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "5"))
 
 def fetch_all_routes():
     headers = {"X-API-KEY": ADMIN_API_KEY}
     try:
-        response = requests.get(ADMIN_API_URL, headers=headers)
+        response = requests.get(
+            ADMIN_API_URL,
+            headers=headers,
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
         response.raise_for_status()
         data = response.json()
         return data.get("list", [])
@@ -38,7 +50,7 @@ def update_metrics():
             print(f"[ERROR] Route {route_id} - failed to extract rate: {e}")
 
 if __name__ == "__main__":
-    start_http_server(8000)
+    start_http_server(EXPORTER_PORT)
     while True:
         update_metrics()
-        time.sleep(1)
+        time.sleep(SCRAPE_INTERVAL_SECONDS)
