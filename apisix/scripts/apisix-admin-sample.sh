@@ -46,7 +46,7 @@ request() {
   PATH_SUFFIX=$2
   shift 2
 
-  curl -sS -i -X "${METHOD}" \
+  curl -sS -i --connect-timeout 10 -X "${METHOD}" \
     "${APISIX_ADMIN_BASE_URL}${PATH_SUFFIX}" \
     -H "X-API-KEY: ${APISIX_ADMIN_KEY}" \
     -H "Content-Type: application/json" \

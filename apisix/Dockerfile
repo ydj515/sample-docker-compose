@@ -16,4 +16,7 @@ RUN chmod +x /usr/local/bin/render-apisix-config.sh
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
+# 최소 권한 원칙: root 작업 완료 후 비권한 사용자로 복귀
+USER apisix
+
 ENTRYPOINT ["/usr/local/bin/render-apisix-config.sh"]

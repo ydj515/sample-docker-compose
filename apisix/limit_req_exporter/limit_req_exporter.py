@@ -14,7 +14,16 @@ ADMIN_API_URL = os.environ.get(
     "http://apisix1:9180/apisix/admin/routes",
 )
 ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "")
-EXPORTER_PORT = int(os.environ.get("EXPORTER_PORT", "8000"))
+_EXPORTER_PORT_RAW = os.environ.get("EXPORTER_PORT", "8000")
+try:
+    EXPORTER_PORT = int(_EXPORTER_PORT_RAW)
+except ValueError:
+    # 정수로 변환 불가능한 값이 설정된 경우 기본값(8000)으로 폴백
+    print(
+        f"[WARN] EXPORTER_PORT 값 '{_EXPORTER_PORT_RAW}'이(가) 유효한 정수가 아닙니다. "
+        "기본값 8000을 사용합니다."
+    )
+    EXPORTER_PORT = 8000
 SCRAPE_INTERVAL_SECONDS = float(os.environ.get("SCRAPE_INTERVAL_SECONDS", "1"))
 REQUEST_TIMEOUT_SECONDS = float(os.environ.get("REQUEST_TIMEOUT_SECONDS", "5"))
 
