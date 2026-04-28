@@ -1,0 +1,31 @@
+groups:
+  - name: codex-task-2
+    rules:
+      - alert: OTelCollectorDown
+        expr: up{job="otel-collector"} == 0 or absent(up{job="otel-collector"})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: OTel Collector is down
+          description: otel-collector scrape target is down or absent for more than 2 minutes.
+
+      - alert: OTelExporterSendFailures
+        expr: |
+          (
+            sum(rate(otelcol_exporter_send_failed_log_records[5m])) or vector(0)
+          )
+          +
+          (
+            sum(rate(otelcol_exporter_send_failed_metric_points[5m])) or vector(0)
+          )
+          +
+          (
+            sum(rate(otelcol_exporter_send_failed_spans[5m])) or vector(0)
+          ) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: OTel exporter send failures detected
+          description: One or more collector exporters are failing to send telemetry data.
