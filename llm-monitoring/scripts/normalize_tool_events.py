@@ -6,15 +6,22 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import subprocess
+import sys
 import time
 import urllib.parse
 import urllib.request
-from pathlib import Path
 from typing import Any
 
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from runtime_common import (
+    add_postgres_args,
+    load_identity_maps,
+    mark_job_finished,
+    mark_job_started,
+    psql_query,
+    resolve_identity,
+    resolve_postgres_target,
+    sql_literal,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,16 +34,21 @@ def parse_args() -> argparse.Namespace:
         default='{service_name=~"codex-cli|codex_cli_rs"}',
         help="Loki LogQL query",
     )
-    parser.add_argument(
-        "--postgres-db",
-        default="codex_observability",
-        help="PostgreSQL database name",
-    )
-    parser.add_argument("--postgres-user", default="codex", help="PostgreSQL user")
+    add_postgres_args(parser)
     parser.add_argument(
         "--pipeline-name",
         default="task4-loki-tool-events",
         help="State tracking key",
+    )
+    parser.add_argument(
+        "--job-name",
+        default="normalize-tool-events",
+        help="Job status key",
+    )
+    parser.add_argument(
+        "--job-group",
+        default="normalization",
+        help="Job status group",
     )
     parser.add_argument(
         "--lookback-seconds",
@@ -50,57 +62,15 @@ def parse_args() -> argparse.Namespace:
         default=5,
         help="Re-read overlap window to tolerate out-of-order delivery",
     )
+    parser.add_argument(
+        "--chunk-seconds",
+        type=int,
+        default=900,
+        help="Split large Loki queries into smaller time windows",
+    )
     parser.add_argument("--limit", type=int, default=5000, help="Loki query limit")
     parser.add_argument("--dry-run", action="store_true", help="Do not write to PostgreSQL")
     return parser.parse_args()
-
-
-def sql_literal(value: str) -> str:
-    return "'" + value.replace("'", "''") + "'"
-
-
-def run_command(command: list[str], *, input_text: str | None = None) -> str:
-    result = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        input=input_text,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        stderr = result.stderr.strip()
-        stdout = result.stdout.strip()
-        details = stderr or stdout or f"exit code {result.returncode}"
-        raise RuntimeError(f"command failed: {' '.join(command)}: {details}")
-    return result.stdout
-
-
-def resolve_postgres_container() -> str:
-    container_id = run_command(["docker", "compose", "ps", "-q", "postgres"]).strip()
-    if not container_id:
-        raise RuntimeError("postgres container not found. Run `docker compose up -d` first.")
-    return container_id
-
-
-def psql_query(container: str, user: str, database: str, sql: str, *, tuples_only: bool = False) -> str:
-    command = [
-        "docker",
-        "exec",
-        "-i",
-        container,
-        "psql",
-        "-U",
-        user,
-        "-d",
-        database,
-        "-v",
-        "ON_ERROR_STOP=1",
-    ]
-    if tuples_only:
-        command.extend(["-At"])
-    command.extend(["-f", "-"])
-    return run_command(command, input_text=sql)
 
 
 def http_get_json(url: str) -> dict[str, Any]:
@@ -109,7 +79,7 @@ def http_get_json(url: str) -> dict[str, Any]:
         return json.loads(response.read().decode("utf-8"))
 
 
-def load_loki_entries(args: argparse.Namespace, start_ns: int, end_ns: int) -> list[tuple[int, dict[str, str], str]]:
+def fetch_loki_entries(args: argparse.Namespace, start_ns: int, end_ns: int) -> list[tuple[int, dict[str, str], str]]:
     params = urllib.parse.urlencode(
         {
             "query": args.loki_query,
@@ -126,6 +96,18 @@ def load_loki_entries(args: argparse.Namespace, start_ns: int, end_ns: int) -> l
         stream = {str(key): str(value) for key, value in stream_entry.get("stream", {}).items()}
         for timestamp_ns, line in stream_entry.get("values", []):
             entries.append((int(timestamp_ns), stream, line))
+    entries.sort(key=lambda item: item[0])
+    return entries
+
+
+def load_loki_entries(args: argparse.Namespace, start_ns: int, end_ns: int) -> list[tuple[int, dict[str, str], str]]:
+    chunk_ns = max(args.chunk_seconds, 1) * 1_000_000_000
+    entries: list[tuple[int, dict[str, str], str]] = []
+    cursor = start_ns
+    while cursor < end_ns:
+        window_end = min(cursor + chunk_ns, end_ns)
+        entries.extend(fetch_loki_entries(args, cursor, window_end))
+        cursor = window_end
     entries.sort(key=lambda item: item[0])
     return entries
 
@@ -194,7 +176,12 @@ def sanitized_raw_event(stream: dict[str, str], event_payload: Any, line: str) -
     }
 
 
-def parse_entry(timestamp_ns: int, stream: dict[str, str], line: str) -> dict[str, Any] | None:
+def parse_entry(
+    timestamp_ns: int,
+    stream: dict[str, str],
+    line: str,
+    identity_maps,
+) -> dict[str, Any] | None:
     outer = try_json(line)
     event_payload: Any | None = None
     attributes: dict[str, Any] = {}
@@ -218,6 +205,52 @@ def parse_entry(timestamp_ns: int, stream: dict[str, str], line: str) -> dict[st
     payload_metadata = deep_get(event_payload, "metadata")
     if not isinstance(payload_metadata, dict):
         payload_metadata = {}
+
+    raw_user_id = (
+        stream.get("user_id")
+        or stream.get("user_email")
+        or stream.get("user_account_id")
+        or resources.get("user_id")
+        or payload_metadata.get("user_id")
+    )
+    raw_team = stream.get("team") or resources.get("team") or payload_metadata.get("team")
+    identity = resolve_identity(
+        identity_maps,
+        raw_user_id=raw_user_id,
+        raw_team=raw_team,
+        observed_user_email=(
+            stream.get("observed_user_email")
+            or stream.get("user_email")
+            or resources.get("observed_user_email")
+            or resources.get("user_email")
+            or payload_metadata.get("observed_user_email")
+            or payload_metadata.get("user_email")
+        ),
+        ingest_token_id=(
+            stream.get("ingest_token_id")
+            or stream.get("otlp_token_id")
+            or resources.get("ingest_token_id")
+            or resources.get("otlp_token_id")
+            or attributes.get("ingest_token_id")
+            or payload_metadata.get("ingest_token_id")
+        ),
+        direct_resolved_user_id=(
+            stream.get("resolved_user_id")
+            or stream.get("gateway_user_id")
+            or resources.get("resolved_user_id")
+            or resources.get("gateway_user_id")
+            or payload_metadata.get("resolved_user_id")
+            or payload_metadata.get("gateway_user_id")
+        ),
+        direct_resolved_team=(
+            stream.get("resolved_team")
+            or stream.get("gateway_team")
+            or resources.get("resolved_team")
+            or resources.get("gateway_team")
+            or payload_metadata.get("resolved_team")
+            or payload_metadata.get("gateway_team")
+        ),
+    )
 
     error_obj = payload_tool.get("error")
     if not isinstance(error_obj, dict):
@@ -265,10 +298,11 @@ def parse_entry(timestamp_ns: int, stream: dict[str, str], line: str) -> dict[st
     if event_name == "codex.tool_result" and tool_success is None and (tool_error_code or tool_error_message):
         tool_success = False
 
-    if isinstance(event_payload, (dict, list)):
-        raw_event = sanitized_raw_event(stream, event_payload, line)
-    else:
-        raw_event = sanitized_raw_event(stream, None, line)
+    raw_event = (
+        sanitized_raw_event(stream, event_payload, line)
+        if isinstance(event_payload, (dict, list))
+        else sanitized_raw_event(stream, None, line)
+    )
     source_fingerprint = hashlib.sha256(
         (
             f"{timestamp_ns}\n"
@@ -282,22 +316,50 @@ def parse_entry(timestamp_ns: int, stream: dict[str, str], line: str) -> dict[st
         "source_timestamp_ns": timestamp_ns,
         "event_time_epoch_ms": timestamp_ns // 1_000_000,
         "event_name": event_name,
-        "environment": stream.get("deployment_environment") or resources.get("deployment.environment"),
+        "environment": (
+            stream.get("deployment_environment")
+            or resources.get("deployment.environment")
+            or stream.get("env")
+        ),
         "service_name": stream.get("service_name") or resources.get("service.name"),
         "service_namespace": stream.get("service_namespace") or resources.get("service.namespace"),
-        "codex_version": stream.get("app_version") or resources.get("app.version"),
-        "user_id": (
-            stream.get("user_id")
-            or stream.get("user_email")
-            or stream.get("user_account_id")
-            or resources.get("user_id")
-            or payload_metadata.get("user_id")
+        "codex_version": (
+            stream.get("app_version")
+            or stream.get("service_version")
+            or resources.get("app.version")
         ),
-        "team": stream.get("team") or resources.get("team") or payload_metadata.get("team"),
-        "repository": stream.get("repository") or resources.get("repository") or payload_metadata.get("repository"),
+        "user_id": raw_user_id,
+        "team": raw_team,
+        "observed_user_email": identity.observed_user_email,
+        "resolved_user_id": identity.resolved_user_id,
+        "resolved_team": identity.resolved_team,
+        "ingest_token_id": identity.ingest_token_id,
+        "repository": (
+            stream.get("repository")
+            or resources.get("repository")
+            or payload_metadata.get("repository")
+        ),
         "project": stream.get("project") or resources.get("project") or payload_metadata.get("project"),
-        "session_id": stream.get("session_id") or resources.get("session_id") or payload_metadata.get("session_id"),
-        "conversation_id": stream.get("conversation_id") or resources.get("conversation_id") or payload_metadata.get("conversation_id"),
+        "session_id": (
+            stream.get("session_id")
+            or resources.get("session_id")
+            or payload_metadata.get("session_id")
+        ),
+        "conversation_id": (
+            stream.get("conversation_id")
+            or resources.get("conversation_id")
+            or payload_metadata.get("conversation_id")
+        ),
+        "trace_id": (
+            stream.get("trace_id")
+            or resources.get("trace_id")
+            or payload_metadata.get("trace_id")
+        ),
+        "span_id": (
+            stream.get("span_id")
+            or resources.get("span_id")
+            or payload_metadata.get("span_id")
+        ),
         "model": stream.get("model") or payload_metadata.get("model"),
         "tool_name": str(tool_name),
         "tool_call_id": (
@@ -322,11 +384,9 @@ def parse_entry(timestamp_ns: int, stream: dict[str, str], line: str) -> dict[st
     }
 
 
-def get_last_synced_ns(container: str, args: argparse.Namespace) -> int:
+def get_last_synced_ns(target, args: argparse.Namespace) -> int:
     output = psql_query(
-        container,
-        args.postgres_user,
-        args.postgres_db,
+        target,
         f"""
 select coalesce(last_source_timestamp_ns, 0)
 from codex_tool_sync_state
@@ -339,7 +399,7 @@ where pipeline_name = {sql_literal(args.pipeline_name)};
     return int(output)
 
 
-def upsert_records(container: str, args: argparse.Namespace, records: list[dict[str, Any]], latest_ns: int) -> None:
+def upsert_records(target, args: argparse.Namespace, records: list[dict[str, Any]], latest_ns: int) -> None:
     payload = json.dumps(records, ensure_ascii=True)
     sql = f"""
 with rows as (
@@ -355,10 +415,16 @@ with rows as (
         codex_version text,
         user_id text,
         team text,
+        observed_user_email text,
+        resolved_user_id text,
+        resolved_team text,
+        ingest_token_id text,
         repository text,
         project text,
         session_id text,
         conversation_id text,
+        trace_id text,
+        span_id text,
         model text,
         tool_name text,
         tool_call_id text,
@@ -382,10 +448,16 @@ insert into codex_tool_events (
     codex_version,
     user_id,
     team,
+    observed_user_email,
+    resolved_user_id,
+    resolved_team,
+    ingest_token_id,
     repository,
     project,
     session_id,
     conversation_id,
+    trace_id,
+    span_id,
     model,
     tool_name,
     tool_call_id,
@@ -408,10 +480,16 @@ select
     codex_version,
     user_id,
     team,
+    observed_user_email,
+    resolved_user_id,
+    resolved_team,
+    ingest_token_id,
     repository,
     project,
     session_id,
     conversation_id,
+    trace_id,
+    span_id,
     model,
     tool_name,
     tool_call_id,
@@ -431,44 +509,72 @@ on conflict (pipeline_name) do update
 set last_source_timestamp_ns = excluded.last_source_timestamp_ns,
     updated_at = excluded.updated_at;
 """
-    psql_query(container, args.postgres_user, args.postgres_db, sql)
+    psql_query(target, sql)
 
 
 def main() -> int:
     args = parse_args()
-    container = resolve_postgres_container()
-    last_synced_ns = get_last_synced_ns(container, args)
-    now_ns = time.time_ns()
-    if last_synced_ns > 0:
-        start_ns = max(0, last_synced_ns - args.overlap_seconds * 1_000_000_000)
-    else:
-        start_ns = now_ns - args.lookback_seconds * 1_000_000_000
+    target = resolve_postgres_target(args)
+    tracking_enabled = not args.dry_run
 
-    entries = load_loki_entries(args, start_ns, now_ns)
-    records = []
-    for timestamp_ns, stream, line in entries:
-        record = parse_entry(timestamp_ns, stream, line)
-        if record:
-            records.append(record)
+    if tracking_enabled:
+        mark_job_started(target, args.job_name, args.job_group)
 
-    latest_ns = max((timestamp_ns for timestamp_ns, _, _ in entries), default=last_synced_ns)
+    try:
+        identity_maps = load_identity_maps(target)
+        last_synced_ns = get_last_synced_ns(target, args)
+        now_ns = time.time_ns()
+        if last_synced_ns > 0:
+            start_ns = max(0, last_synced_ns - args.overlap_seconds * 1_000_000_000)
+        else:
+            start_ns = now_ns - args.lookback_seconds * 1_000_000_000
 
-    if args.dry_run:
-        print(json.dumps({"entries": len(entries), "normalized_records": len(records)}, ensure_ascii=False))
-        for record in records[:5]:
-            print(json.dumps(record, ensure_ascii=False))
+        entries = load_loki_entries(args, start_ns, now_ns)
+        records = []
+        for timestamp_ns, stream, line in entries:
+            record = parse_entry(timestamp_ns, stream, line, identity_maps)
+            if record:
+                records.append(record)
+
+        latest_ns = max((timestamp_ns for timestamp_ns, _, _ in entries), default=last_synced_ns)
+
+        if args.dry_run:
+            print(
+                json.dumps(
+                    {"entries": len(entries), "normalized_records": len(records)},
+                    ensure_ascii=False,
+                )
+            )
+            for record in records[:5]:
+                print(json.dumps(record, ensure_ascii=False))
+            return 0
+
+        if records:
+            upsert_records(target, args, records, latest_ns)
+        elif latest_ns > last_synced_ns:
+            upsert_records(target, args, [], latest_ns)
+
+        print(
+            f"normalized {len(records)} tool events from {len(entries)} Loki entries "
+            f"(last_source_timestamp_ns={latest_ns})"
+        )
+        if tracking_enabled:
+            mark_job_finished(target, args.job_name, args.job_group, success=True)
         return 0
-
-    if records:
-        upsert_records(container, args, records, latest_ns)
-    elif latest_ns > last_synced_ns:
-        upsert_records(container, args, [], latest_ns)
-
-    print(
-        f"normalized {len(records)} tool events from {len(entries)} Loki entries "
-        f"(last_source_timestamp_ns={latest_ns})"
-    )
-    return 0
+    except Exception as error:  # noqa: BLE001
+        if tracking_enabled:
+            try:
+                mark_job_finished(
+                    target,
+                    args.job_name,
+                    args.job_group,
+                    success=False,
+                    error_message=str(error),
+                )
+            except Exception:  # noqa: BLE001
+                pass
+        print(f"tool normalization failed: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
