@@ -1,6 +1,12 @@
 ### common ###
 .env
 
+### build file ###
+__pycache__
+
+### playwright files ###
+.playwright-mcp
+
 ### opentelemetry ###
 opentelemetry/secretkey
 opentelemetry/grafana/provisioning/alerting
