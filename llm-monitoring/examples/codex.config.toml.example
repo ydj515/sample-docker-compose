@@ -1,21 +1,39 @@
 [otel]
-environment = "staging"
+environment = "local"
 log_user_prompt = false
 
+# 사용자별 또는 기기별 ingest token.
+# gateway/collector 앞단에서 이 값을 검증한 뒤
+# ingest_token_id / resolved_user_id / resolved_team 으로 매핑한다.
+# 아래 값은 placeholder 이므로 실제 발급 토큰 문자열로 치환해서 사용한다.
 exporter = { otlp-http = {
   endpoint = "http://localhost:4318/v1/logs",
-  protocol = "binary"
+  protocol = "binary",
+  headers = { "x-codex-ingest-token" = "USER_SPECIFIC_TOKEN" }
 }}
 
 metrics_exporter = { otlp-http = {
   endpoint = "http://localhost:4318/v1/metrics",
-  protocol = "binary"
+  protocol = "binary",
+  headers = { "x-codex-ingest-token" = "USER_SPECIFIC_TOKEN" }
 }}
 
 trace_exporter = { otlp-http = {
   endpoint = "http://localhost:4318/v1/traces",
-  protocol = "binary"
+  protocol = "binary",
+  headers = { "x-codex-ingest-token" = "USER_SPECIFIC_TOKEN" }
 }}
 
 [analytics]
 enabled = false
+
+# 선택 사항: local helper를 같이 쓰는 경우 turn-complete 시점에
+# repository / branch / message length 통계를 별도 OTLP log로 보강할 수 있다.
+#
+# notify = [
+#   "/usr/bin/env",
+#   "python3",
+#   "/Users/you/.codex/local-helper/codex-local-helper.py",
+#   "--config",
+#   "/Users/you/.codex/codex-local-helper.toml",
+# ]
