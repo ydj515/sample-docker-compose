@@ -1,0 +1,639 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Trace 세션 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round((percentile_cont(0.95) within group (order by session_duration_ms))::numeric, 2), 0) as value from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "세션 p95 Duration",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(max(session_duration_ms), 0) as value from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "최대 세션 Duration",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(avg(log_event_count), 2), 0) as value from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "세션당 연관 로그 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(session_started_at, '5m'), round(avg(session_duration_ms), 2) as avg_duration_ms, max(session_duration_ms) as max_duration_ms from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) group by 1 order by 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "세션 Duration 추이",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select trace_id, session_started_at, session_duration_ms, root_span_name, slowest_span_name, slowest_span_duration_ms, span_count, log_event_count, api_event_count, tool_event_count, user_id, team, conversation_id from codex_trace_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) order by session_duration_ms desc, session_started_at desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "느린 Trace 세션 Top 50",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select s.event_time, s.trace_id, s.span_id, s.span_name, s.duration_ms, s.user_id, s.team, t.conversation_id, s.service_name, s.rpc_method, s.transport, s.tool_name from codex_trace_spans_dashboard s left join codex_trace_sessions_dashboard t on s.trace_id = t.trace_id where $__timeFilter(s.event_time) and ($v$${team:text}$v$ = $v$All$v$ or s.team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or s.user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or t.conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or s.service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or s.trace_id = $v$${trace_id:text}$v$) order by s.duration_ms desc, s.event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "느린 Span Top 100",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, trace_id, span_id, request_type, correlated_span_name, correlated_span_duration_ms, user_id, team, conversation_id, trace_service_name from codex_trace_log_correlation_dashboard where $__timeFilter(event_time) and event_source = 'api' and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or trace_service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) order by event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 API Request Correlation",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, trace_id, span_id, tool_name, tool_success, tool_duration_ms, correlated_span_name, correlated_span_duration_ms, user_id, team, conversation_id from codex_trace_log_correlation_dashboard where $__timeFilter(event_time) and event_source = 'tool' and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) order by event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 Tool Call Correlation",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, trace_id, span_id, event_kind, item_id, arguments_size, correlated_span_name, correlated_span_duration_ms, user_id, team, conversation_id from codex_trace_log_correlation_dashboard where $__timeFilter(event_time) and event_source = 'fn_call' and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) order by event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 fn_call Correlation",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, trace_id, approval_type, approval_duration_ms, span_name, user_id, team, conversation_id, root_span_name, slowest_span_name from codex_trace_approval_spans_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${service_name:text}$v$ = $v$All$v$ or service_name = $v$${service_name:text}$v$) and ($v$${trace_id:text}$v$ = $v$All$v$ or trace_id = $v$${trace_id:text}$v$) order by event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 Approval Span",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "style": "dark",
+  "tags": [
+    "codex",
+    "trace",
+    "tempo"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct team from codex_trace_sessions_dashboard where team is not null order by 1;",
+        "includeAll": true,
+        "multi": false,
+        "name": "team",
+        "options": [],
+        "query": "select distinct team from codex_trace_sessions_dashboard where team is not null order by 1;",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct user_id from codex_trace_sessions_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "includeAll": true,
+        "multi": false,
+        "name": "user_id",
+        "options": [],
+        "query": "select distinct user_id from codex_trace_sessions_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct conversation_id from codex_trace_sessions_dashboard where conversation_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "multi": false,
+        "name": "conversation_id",
+        "options": [],
+        "query": "select distinct conversation_id from codex_trace_sessions_dashboard where conversation_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct service_name from codex_trace_sessions_dashboard where service_name is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "multi": false,
+        "name": "service_name",
+        "options": [],
+        "query": "select distinct service_name from codex_trace_sessions_dashboard where service_name is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct trace_id from codex_trace_sessions_dashboard where trace_id is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "multi": false,
+        "name": "trace_id",
+        "options": [],
+        "query": "select distinct trace_id from codex_trace_sessions_dashboard where trace_id is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Codex Trace Analysis",
+  "uid": "codex-trace-analysis",
+  "version": 2
+}

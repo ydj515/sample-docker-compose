@@ -26,6 +26,8 @@ datasources:
       httpMethod: GET
       tracesToLogs:
         datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: true
 
   - name: PostgreSQL
     uid: postgres

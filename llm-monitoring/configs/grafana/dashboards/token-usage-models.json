@@ -61,7 +61,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select now() as time, coalesce(sum(total_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring});",
+          "rawSql": "select now() as time, coalesce(sum(total_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
           "refId": "A"
         }
       ],
@@ -120,7 +120,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select now() as time, coalesce(sum(input_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring});",
+          "rawSql": "select now() as time, coalesce(sum(input_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
           "refId": "A"
         }
       ],
@@ -179,7 +179,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select now() as time, coalesce(sum(visible_output_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring});",
+          "rawSql": "select now() as time, coalesce(sum(visible_output_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
           "refId": "A"
         }
       ],
@@ -238,7 +238,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select now() as time, coalesce(round(100.0 * avg(case when cached_input_tokens_available then 1.0 else 0.0 end), 2), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring});",
+          "rawSql": "select now() as time, coalesce(round(100.0 * avg(case when cached_input_tokens_available then 1.0 else 0.0 end), 2), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
           "refId": "A"
         }
       ],
@@ -277,7 +277,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select model, count(*) as requests, sum(input_tokens) as input_tokens, sum(coalesce(cached_input_tokens, 0)) as cached_input_tokens, sum(uncached_input_tokens) as uncached_input_tokens, sum(output_tokens) as output_tokens, sum(coalesce(reasoning_tokens, 0)) as reasoning_tokens, sum(visible_output_tokens) as visible_output_tokens, sum(total_tokens) as total_tokens from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring}) group by model order by total_tokens desc;",
+          "rawSql": "select model, count(*) as requests, sum(input_tokens) as input_tokens, sum(coalesce(cached_input_tokens, 0)) as cached_input_tokens, sum(uncached_input_tokens) as uncached_input_tokens, sum(output_tokens) as output_tokens, sum(coalesce(reasoning_tokens, 0)) as reasoning_tokens, sum(visible_output_tokens) as visible_output_tokens, sum(total_tokens) as total_tokens from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by model order by total_tokens desc;",
           "refId": "A"
         }
       ],
@@ -322,7 +322,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "select $__timeGroupAlias(event_time, '1d'), model as metric, sum(total_tokens) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring}) group by 1, 2 order by 1;",
+          "rawSql": "select $__timeGroupAlias(event_time, '1d'), model as metric, sum(total_tokens) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by 1, 2 order by 1;",
           "refId": "A"
         }
       ],
@@ -361,7 +361,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select model, count(*) as total_requests, sum(case when cached_input_tokens_available then 1 else 0 end) as cached_breakdown_present, sum(case when reasoning_tokens_available then 1 else 0 end) as reasoning_breakdown_present from codex_usage_events_dashboard where $__timeFilter(event_time) and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) and (${repository:sqlstring} = '__all' or repository = ${repository:sqlstring}) and (${model:sqlstring} = '__all' or model = ${model:sqlstring}) group by model order by total_requests desc;",
+          "rawSql": "select model, count(*) as total_requests, sum(case when cached_input_tokens_available then 1 else 0 end) as cached_breakdown_present, sum(case when reasoning_tokens_available then 1 else 0 end) as reasoning_breakdown_present from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by model order by total_requests desc;",
           "refId": "A"
         }
       ],
@@ -411,13 +411,13 @@
           "type": "postgres",
           "uid": "postgres"
         },
-        "definition": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) order by 1;",
+        "definition": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
         "includeAll": true,
         "label": "user",
         "multi": false,
         "name": "user_id",
         "options": [],
-        "query": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) order by 1;",
+        "query": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
         "refresh": 2,
         "type": "query"
       },
@@ -432,13 +432,13 @@
           "type": "postgres",
           "uid": "postgres"
         },
-        "definition": "select distinct repository from codex_usage_events_dashboard where repository is not null and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) order by 1;",
+        "definition": "select distinct repository from codex_usage_events_dashboard where repository is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
         "includeAll": true,
         "label": "repository",
         "multi": false,
         "name": "repository",
         "options": [],
-        "query": "select distinct repository from codex_usage_events_dashboard where repository is not null and (${team:sqlstring} = '__all' or team = ${team:sqlstring}) and (${user_id:sqlstring} = '__all' or user_id = ${user_id:sqlstring}) order by 1;",
+        "query": "select distinct repository from codex_usage_events_dashboard where repository is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
         "refresh": 2,
         "type": "query"
       },

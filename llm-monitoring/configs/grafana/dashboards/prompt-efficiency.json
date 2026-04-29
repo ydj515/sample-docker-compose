@@ -1,0 +1,680 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Helper Turn 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(avg(input_message_char_count)::numeric, 2), 0) as value from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "평균 Prompt 길이",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.2
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(corr(input_message_char_count::numeric, output_tokens::numeric)::numeric, 4), 0) as value from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and input_message_char_count is not null and output_tokens is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt 길이 vs Output Token 상관계수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 4,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.2
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(corr(input_message_char_count::numeric, estimated_cost_usd::numeric)::numeric, 4), 0) as value from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and input_message_char_count is not null and estimated_cost_usd is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt 길이 vs 비용 상관계수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(100.0 * avg(case when has_correlated_runtime_events then 1.0 else 0.0 end), 2), 0) as value from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Runtime Correlation Coverage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(helper_event_time, '30m'), round(avg(input_message_char_count)::numeric, 2) as avg_prompt_chars, round(avg(output_tokens)::numeric, 2) as avg_output_tokens, round(avg(estimated_cost_usd)::numeric, 6) as avg_cost_usd from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$) group by 1 order by 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "시간대별 Prompt 길이 / Output Token / 비용",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select prompt_char_bucket, count(*) as turns, round(avg(output_tokens)::numeric, 2) as avg_output_tokens, round(avg(total_tokens)::numeric, 2) as avg_total_tokens, round(avg(estimated_cost_usd)::numeric, 6) as avg_cost_usd, round(avg(estimated_retry_count)::numeric, 2) as avg_retry_proxy, round(100.0 * avg(case when has_failure then 1.0 else 0.0 end), 2) as failed_turn_ratio_pct from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$) group by prompt_char_bucket, prompt_char_bucket_order order by prompt_char_bucket_order;",
+          "refId": "A"
+        }
+      ],
+      "title": "Prompt Bucket별 효율 요약",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select session_started_at, session_last_event_time, thread_id, user_id, team, repo_name, git_branch, turn_count, total_prompt_chars, total_output_tokens, round(total_estimated_cost_usd::numeric, 8) as total_estimated_cost_usd, total_failed_tool_calls, total_estimated_retries, round(failed_turn_ratio_pct::numeric, 2) as failed_turn_ratio_pct, session_max_trace_duration_ms from codex_prompt_sessions_dashboard where $__timeFilter(session_started_at) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$) order by total_estimated_cost_usd desc, session_started_at desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "고비용 세션 Top 50",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 34
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select helper_event_time, thread_id, turn_id, user_id, team, repo_name, git_branch, primary_model, input_message_char_count, output_tokens, round(estimated_cost_usd::numeric, 8) as estimated_cost_usd, failed_tool_call_count, failed_api_request_count, estimated_retry_count, tool_names, failed_tool_names, request_type_counts from codex_prompt_turns_dashboard where $__timeFilter(helper_event_time) and (has_failure = true or estimated_retry_count > 0) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or primary_model = $v$${model:text}$v$) and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$) order by failed_tool_call_count desc, estimated_retry_count desc, estimated_cost_usd desc, helper_event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "반복 실패 패턴 Top 50",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 44
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select helper_event_time, thread_id, turn_id, user_id, team, repo_name, git_branch, models, input_message_char_count, output_tokens, round(estimated_cost_usd::numeric, 8) as estimated_cost_usd, failed_tool_call_count, estimated_retry_count, round(output_tokens_per_1k_prompt_chars::numeric, 2) as output_tokens_per_1k_prompt_chars, round(cost_per_1k_prompt_chars::numeric, 8) as cost_per_1k_prompt_chars, recommendation from codex_prompt_optimization_candidates_dashboard where $__timeFilter(helper_event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) and ($v$${git_branch:text}$v$ = $v$All$v$ or git_branch = $v$${git_branch:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or models like '%' || $v$${model:text}$v$ || '%') and ($v$${thread_id:text}$v$ = $v$All$v$ or thread_id = $v$${thread_id:text}$v$) order by helper_event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "개선 후보 Turn",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 40,
+  "style": "dark",
+  "tags": [
+    "codex",
+    "prompt",
+    "helper"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct team from codex_prompt_turns_dashboard where team is not null order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "team",
+        "multi": false,
+        "name": "team",
+        "options": [],
+        "query": "select distinct team from codex_prompt_turns_dashboard where team is not null order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct user_id from codex_prompt_turns_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "user",
+        "multi": false,
+        "name": "user_id",
+        "options": [],
+        "query": "select distinct user_id from codex_prompt_turns_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct repo_name from codex_prompt_turns_dashboard where repo_name is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "repo",
+        "multi": false,
+        "name": "repo_name",
+        "options": [],
+        "query": "select distinct repo_name from codex_prompt_turns_dashboard where repo_name is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct git_branch from codex_prompt_turns_dashboard where git_branch is not null and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "branch",
+        "multi": false,
+        "name": "git_branch",
+        "options": [],
+        "query": "select distinct git_branch from codex_prompt_turns_dashboard where git_branch is not null and ($v$${repo_name:text}$v$ = $v$All$v$ or repo_name = $v$${repo_name:text}$v$) order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct primary_model from codex_prompt_turns_dashboard where primary_model is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "model",
+        "multi": false,
+        "name": "model",
+        "options": [],
+        "query": "select distinct primary_model from codex_prompt_turns_dashboard where primary_model is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct thread_id from codex_prompt_turns_dashboard where thread_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "editorMode": "code",
+        "includeAll": true,
+        "label": "thread",
+        "multi": false,
+        "name": "thread_id",
+        "options": [],
+        "query": "select distinct thread_id from codex_prompt_turns_dashboard where thread_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Codex Prompt Efficiency",
+  "uid": "codex-prompt-efficiency",
+  "version": 1,
+  "weekStart": ""
+}
