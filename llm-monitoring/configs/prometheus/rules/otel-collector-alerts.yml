@@ -1,5 +1,5 @@
 groups:
-  - name: codex-task-2
+  - name: otel-collector-alerts
     rules:
       - alert: OTelCollectorDown
         expr: up{job="otel-collector"} == 0 or absent(up{job="otel-collector"})

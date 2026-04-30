@@ -1,0 +1,172 @@
+groups:
+  - name: codex-operations-alerts
+    rules:
+      - alert: CodexOpsExporterDown
+        expr: up{job="codex-ops-exporter"} == 0 or absent(up{job="codex-ops-exporter"})
+        for: 2m
+        labels:
+          severity: critical
+          category: operations
+        annotations:
+          summary: Codex operations exporter is down
+          description: codex-ops-exporter scrape target is down or absent for more than 2 minutes.
+
+      - alert: CodexTeamBudgetWarning
+        expr: codex_team_budget_usage_ratio >= scalar(max(codex_alert_threshold{name="team_budget_warning_ratio"})) and codex_team_budget_usage_ratio < scalar(max(codex_alert_threshold{name="team_budget_critical_ratio"}))
+        for: 10m
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: Team monthly budget usage is above 70%
+          description: Team {{ $labels.team }} budget usage ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexTeamBudgetCritical
+        expr: codex_team_budget_usage_ratio >= scalar(max(codex_alert_threshold{name="team_budget_critical_ratio"}))
+        for: 10m
+        labels:
+          severity: critical
+          category: cost
+        annotations:
+          summary: Team monthly budget usage is above 90%
+          description: Team {{ $labels.team }} budget usage ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexUserDailyCostHigh
+        expr: codex_user_daily_estimated_cost_usd > scalar(max(codex_alert_threshold{name="user_daily_cost_usd"}))
+        for: 10m
+        labels:
+          severity: warning
+          category: cost
+        annotations:
+          summary: User daily Codex cost is above threshold
+          description: User {{ $labels.user_id }} in team {{ $labels.team }} exceeded the configured daily cost threshold.
+
+      - alert: CodexCompanyDailyCostHigh
+        expr: codex_company_daily_estimated_cost_usd > scalar(max(codex_alert_threshold{name="company_daily_cost_usd"}))
+        for: 10m
+        labels:
+          severity: critical
+          category: cost
+        annotations:
+          summary: Company daily Codex cost is above threshold
+          description: Company-wide daily estimated Codex cost exceeded the configured threshold.
+
+      - alert: CodexToolFailureRateHigh
+        expr: codex_tool_recent_failure_rate_ratio >= scalar(max(codex_alert_threshold{name="tool_failure_rate_ratio"})) and on(tool_name, instance, job) codex_tool_recent_evaluated_calls >= 3
+        for: 10m
+        labels:
+          severity: warning
+          category: quality
+        annotations:
+          summary: Tool failure rate is above threshold
+          description: Tool {{ $labels.tool_name }} recent failure rate ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexApiFailureRateHigh
+        expr: codex_api_recent_failure_rate_ratio >= scalar(max(codex_alert_threshold{name="api_failure_rate_ratio"})) and on(request_type, instance, job) codex_api_recent_evaluated_calls >= 3
+        for: 10m
+        labels:
+          severity: warning
+          category: quality
+        annotations:
+          summary: API request failure rate is above threshold
+          description: Request type {{ $labels.request_type }} recent failure rate ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexToolP95DurationHigh
+        expr: codex_tool_recent_p95_duration_ms >= scalar(max(codex_alert_threshold{name="tool_p95_duration_ms"})) and on(tool_name, instance, job) codex_tool_recent_total_calls >= 3
+        for: 10m
+        labels:
+          severity: warning
+          category: quality
+        annotations:
+          summary: Tool p95 latency is above threshold
+          description: Tool {{ $labels.tool_name }} recent p95 duration is {{ printf "%.0f" $value }} ms.
+
+      - alert: CodexUsageDataGapDetected
+        expr: codex_usage_last_event_age_seconds >= scalar(max(codex_alert_threshold{name="data_gap_seconds"})) and on(instance, job) codex_usage_events_last_24h_total > 0
+        for: 10m
+        labels:
+          severity: warning
+          category: pipeline
+        annotations:
+          summary: Usage pipeline data gap detected
+          description: No new normalized usage event has been seen for {{ printf "%.0f" $value }} seconds.
+
+      - alert: CodexToolDataGapDetected
+        expr: codex_tool_last_event_age_seconds >= scalar(max(codex_alert_threshold{name="data_gap_seconds"})) and on(instance, job) codex_tool_results_last_24h_total > 0
+        for: 10m
+        labels:
+          severity: warning
+          category: pipeline
+        annotations:
+          summary: Tool pipeline data gap detected
+          description: No new normalized tool result has been seen for {{ printf "%.0f" $value }} seconds.
+
+      - alert: LokiRetentionStale
+        expr: time() - loki_compactor_apply_retention_last_successful_run_timestamp_seconds >= scalar(max(codex_alert_threshold{name="loki_retention_stale_seconds"}))
+        for: 15m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: Loki retention has not run recently
+          description: Loki compactor retention last successful run is older than the configured threshold.
+
+      - alert: TempoRetentionErrors
+        expr: increase(tempodb_retention_errors_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: Tempo retention errors detected
+          description: Tempo retention reported one or more errors during the last 15 minutes.
+
+      - alert: PrometheusTSDBWriteFailures
+        expr: increase(prometheus_tsdb_wal_writes_failed_total{job="prometheus"}[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: Prometheus TSDB WAL write failures detected
+          description: Prometheus TSDB WAL write failures were observed during the last 15 minutes.
+
+      - alert: CodexStoreUsageWarning
+        expr: codex_store_usage_ratio >= 0.70 and codex_store_usage_ratio < 0.85
+        for: 10m
+        labels:
+          severity: warning
+          category: storage
+        annotations:
+          summary: Store usage is above 70%
+          description: Store {{ $labels.store }} usage ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexStoreUsageCritical
+        expr: codex_store_usage_ratio >= 0.85
+        for: 10m
+        labels:
+          severity: critical
+          category: storage
+        annotations:
+          summary: Store usage is above 85%
+          description: Store {{ $labels.store }} usage ratio is {{ printf "%.4f" $value }}.
+
+      - alert: CodexRetentionJobFailed
+        expr: codex_job_last_finished_timestamp_seconds{job_group="retention"} > 0 and codex_job_last_run_success{job_group="retention"} == 0
+        for: 15m
+        labels:
+          severity: critical
+          category: retention
+        annotations:
+          summary: Retention job failed
+          description: Retention job {{ $labels.job_name }} last finished with a failure status.
+
+      - alert: CodexRetentionJobStale
+        expr: codex_job_last_success_timestamp_seconds{job_group="retention"} > 0 and time() - codex_job_last_success_timestamp_seconds{job_group="retention"} >= scalar(max(codex_alert_threshold{name="retention_job_stale_seconds"}))
+        for: 30m
+        labels:
+          severity: warning
+          category: retention
+        annotations:
+          summary: Retention job has not succeeded recently
+          description: Retention job {{ $labels.job_name }} has not succeeded within the configured freshness window.
