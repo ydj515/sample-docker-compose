@@ -567,7 +567,8 @@
   "tags": [
     "codex",
     "operations",
-    "alerts"
+    "alerts",
+    "health"
   ],
   "templating": {
     "list": []

@@ -565,8 +565,9 @@
   "schemaVersion": 38,
   "tags": [
     "codex",
+    "identity",
     "enrichment",
-    "user-mapping"
+    "mapping"
   ],
   "templating": {
     "list": [

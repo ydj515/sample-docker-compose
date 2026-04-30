@@ -899,8 +899,9 @@
   "style": "dark",
   "tags": [
     "codex",
-    "task-4",
-    "tools"
+    "tools",
+    "usage",
+    "latency"
   ],
   "templating": {
     "list": [

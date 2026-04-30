@@ -999,7 +999,8 @@
   "tags": [
     "codex",
     "cost",
-    "billing"
+    "billing",
+    "spend"
   ],
   "templating": {
     "list": [

@@ -374,8 +374,9 @@
   "style": "dark",
   "tags": [
     "codex",
-    "task-3",
-    "tokens"
+    "tokens",
+    "usage",
+    "models"
   ],
   "templating": {
     "list": [

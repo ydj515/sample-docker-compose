@@ -388,8 +388,9 @@
   "style": "dark",
   "tags": [
     "codex",
-    "task-2",
-    "health"
+    "collector",
+    "health",
+    "otel"
   ],
   "templating": {
     "list": []

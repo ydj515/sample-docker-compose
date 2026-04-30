@@ -525,7 +525,8 @@
   "style": "dark",
   "tags": [
     "codex",
-    "trace",
+    "tracing",
+    "latency",
     "tempo"
   ],
   "templating": {

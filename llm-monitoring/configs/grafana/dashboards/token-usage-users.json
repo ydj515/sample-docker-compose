@@ -469,9 +469,9 @@
   "style": "dark",
   "tags": [
     "codex",
-    "task-3",
     "tokens",
-    "user"
+    "usage",
+    "users"
   ],
   "templating": {
     "list": [
