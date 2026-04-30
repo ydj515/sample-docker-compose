@@ -178,6 +178,7 @@ docker compose up -d
 - Tempo: `http://localhost:3200`
 - OTLP ingest gateway health: `http://localhost:4318/healthz`
 - OTel Collector health: `http://localhost:13133`
+- Operations exporter health: `http://localhost:9107/healthz`
 - Operations exporter metrics: `http://localhost:9107/metrics`
 
 ## 6. Codex 설정 예시
@@ -305,14 +306,15 @@ docker compose exec -T cron-scheduler \
   - 한 사용자가 여러 계정을 쓰면 세션마다 달라질 수 있다.
 - `codex_user_email_mapping`
   - `observed_user_email -> resolved_user_id`를 연결하는 alias 테이블이다.
-  - `elwpdl515@naver.com`, `yemy_82@boawe.com`처럼 여러 이메일이 같은 `dj.yoo`로 합쳐질 수 있다.
+  - `example.1@example.com`, `example.2@example.com`처럼 여러 이메일이 같은 `example`로 합쳐질 수 있다.
 
 즉 `codex_user_mapping`은 사람 기준 master이고, `codex_user_email_mapping`은 이메일 alias 기준 매핑 테이블이다.
 
-초기 canonical user seed는 아래처럼 설정돼 있다.
+초기 canonical user seed는 `configs/user-mapping-sample.csv`를 기준으로 아래처럼 설정돼 있다.
 
-- `elwpdl515@naver.com` -> `dj.yoo`
-- `yemy_82@boawe.com` -> `dj.yoo`
+- `example`의 대표 이메일: `example@example.com`
+- `example.1@example.com` -> `example`
+- `example.2@example.com` -> `example`
 
 즉 한 사용자가 여러 Codex/OpenAI 계정 또는 이메일 별칭을 사용하더라도, `resolved_user_id` 기준으로 같은 사용자로 집계된다.
 
@@ -334,12 +336,12 @@ gateway 또는 관리 스크립트에서 사용할 기본 테이블은 아래 �
 canonical 사용자 예시는 아래와 같다.
 
 - `codex_user_mapping`
-  - `user_id = dj.yoo`
-  - `email = yemy_82@boawe.com`
+  - `user_id = example`
+  - `email = example@example.com`
   - `team = backend`
 - `codex_user_email_mapping`
-  - `elwpdl515@naver.com -> dj.yoo`
-  - `yemy_82@boawe.com -> dj.yoo`
+  - `example.1@example.com -> example`
+  - `example.2@example.com -> example`
 
 정규화 테이블은 raw field와 resolved field를 둘 다 유지한다.
 
@@ -490,7 +492,7 @@ bash scripts/install_codex_local_helper.sh
 
 중요한 점은 현재 helper MVP가 `notify` 기반이라는 점이다. 따라서 `agent-turn-complete` 요약 이벤트는 수집할 수 있지만, human approval wait time을 계산할 수 있는 정밀 `approval_requested/completed` pair는 아직 없다. 이 부분은 같은 helper에 hook 기반 또는 별도 로컬 이벤트 소스를 추가해 확장한다.
 
-이미 `~/.codex/config.toml`에 `notify = [...]`가 있다면 현재 MVP helper는 그 notifier를 대체한다. 기존 notifier를 계속 쓰려면 helper fan-out 또는 wrapper script를 별도로 두는 편이 안전하다.
+현재 install script는 `codex-notify-fanout.py`를 같이 설치하고, 기존 `notify = [...]`가 있으면 fan-out config에 자동으로 포함한다. 따라서 기존 notifier와 local helper를 함께 유지하는 것이 기본 경로다.
 
 ## 6.5 Prompt Efficiency
 
@@ -547,10 +549,10 @@ bash scripts/install_codex_local_helper.sh
   - Collector/Loki/Tempo/Prometheus self-scrape
   - remote write receiver 사용
   - Alertmanager 연동
-- `configs/prometheus/rules/task-2-alerts.yml`
+- `configs/prometheus/rules/otel-collector-alerts.yml`
   - `OTelCollectorDown`
   - `OTelExporterSendFailures`
-- `configs/prometheus/rules/task-6-alerts.yml`
+- `configs/prometheus/rules/codex-operations-alerts.yml`
   - 비용 임계치, tool failure/p95, 데이터 gap, 저장소 사용률, retention job alert
 - `configs/tempo/config.yml`
   - local backend
@@ -572,18 +574,20 @@ bash scripts/install_codex_local_helper.sh
   - `codex_usage_events`, `codex_usage_sync_state`, `codex_usage_events_dashboard` 생성
 - `configs/postgres/init/002-task4-schema.sql`
   - `codex_tool_events`, `codex_tool_sync_state`, `codex_tool_results_dashboard` 생성
-- `configs/postgres/init/004-task5-cost-schema.sql`
+- `configs/postgres/init/004-cost-schema.sql`
   - 비용 집계, 가격 정책, 팀 budget view 생성
-- `configs/postgres/init/005-task6-ops-schema.sql`
+- `configs/postgres/init/005-ops-schema.sql`
   - `codex_job_run_status`, `codex_job_run_status_dashboard` 생성
 - `configs/postgres/init/007-identity-resolution-schema.sql`
   - email alias / ingest token / resolved identity 컬럼과 dashboard view 생성
-- `configs/postgres/init/009-identity-backfill-and-gateway-bootstrap.sql`
-  - `dj.yoo -> backend` canonical team backfill과 alias seed 보정
-- `configs/postgres/init/010-task7-trace-schema.sql`
+- `configs/postgres/init/009-user-seed-from-csv.sql`
+  - `configs/user-mapping-sample.csv`를 읽어 canonical user와 email alias seed 적재
+- `configs/postgres/init/010-trace-schema.sql`
   - trace span 저장, log-trace correlation view, session aggregate view, approval span view 생성
-- `configs/postgres/init/011-task8-prompt-efficiency-schema.sql`
+- `configs/postgres/init/011-prompt-efficiency-schema.sql`
   - local helper 정규화 테이블과 prompt turn/session/candidate view 생성
+- `configs/postgres/init/012-usage-context-schema.sql`
+  - usage event에 local helper 기반 repository context를 보강하고 cost view와 연동
 - `examples/codex.local-helper.toml.example`
   - local helper privacy / 수집 범위 설정 예시
 - `scripts/send_sample_otel.py`
@@ -648,7 +652,7 @@ bash scripts/install_codex_local_helper.sh
 - 실제 Codex 세션 `conversation_id=019dd1e4-1635-75b0-a34f-584e814c2137`의 `codex.tool_decision`, `codex.tool_result`, `codex.websocket_event` 수집 확인
 - 실제 Codex `tool_result`는 `service_name=codex_cli_rs`, `tool_name`, `call_id`, `duration_ms`, `success` label 중심 포맷임을 확인
 - `ops-exporter`의 `/metrics`에서 팀 budget, 회사/사용자 일 비용, retention job status, 저장소 사용률 노출 확인
-- Prometheus에서 `codex-task-6` rule group 로드 및 `codex-ops-exporter` scrape target `up` 확인
+- Prometheus에서 `codex-operations-alerts` rule group 로드 및 `codex-ops-exporter` scrape target `up` 확인
 - Grafana에서 `Codex Operations Alerting` 대시보드 자동 프로비저닝 확인
 - `compute-daily`, `purge-raw-events`, `drop-old-rows` 실행 후 `codex_job_run_status` 메트릭 반영 확인
 - `cron-scheduler`가 5분 이내 실사용 Codex usage/tool/API request를 자동 정규화하는 것 확인
@@ -666,7 +670,7 @@ bash scripts/install_codex_local_helper.sh
 - Grafana folder/team RBAC 자동화
 - tool output snippet에 대한 추가 redaction 규칙
 - Collector HA 구성
-- local helper `notify` fan-out 또는 wrapper
+- local helper `notify` fan-out 또는 wrapper 고도화
 - helper approval lifecycle hook과 human wait time 계산
 - opt-in prompt snippet sampling 검토와 redaction 정책 구체화
 
@@ -750,7 +754,7 @@ python3 scripts/calculate_costs.py compute-daily --date $(date +%Y-%m-%d)
 
 - `curl http://localhost:9107/metrics`에서 `codex_team_budget_usage_ratio`, `codex_job_last_run_success`, `codex_store_usage_ratio`가 노출된다.
 - Prometheus target에서 `codex-ops-exporter`가 `up` 상태다.
-- Prometheus rule group `codex-task-6`가 로드된다.
+- Prometheus rule group `codex-operations-alerts`가 로드된다.
 - Grafana `Codex Operations Alerting` 대시보드가 보인다.
 - 현재 로컬 스택처럼 normalizer를 주기 실행하지 않으면 data gap alert가 `pending` 또는 `firing`으로 올라온다.
 
