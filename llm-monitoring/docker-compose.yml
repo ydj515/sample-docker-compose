@@ -1,4 +1,30 @@
 services:
+  ingest-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingest-gateway
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-codex_observability}
+      POSTGRES_USER: ${POSTGRES_USER:-codex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codex}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-codex}
+      INGEST_GATEWAY_PORT: ${INGEST_GATEWAY_PORT:-4318}
+      INGEST_GATEWAY_FORWARD_BASE_URL: ${INGEST_GATEWAY_FORWARD_BASE_URL:-http://otel-collector:4318}
+      INGEST_GATEWAY_CACHE_SECONDS: ${INGEST_GATEWAY_CACHE_SECONDS:-30}
+      INGEST_GATEWAY_REQUIRE_TOKEN: ${INGEST_GATEWAY_REQUIRE_TOKEN:-false}
+      INGEST_GATEWAY_ALLOW_UNMAPPED: ${INGEST_GATEWAY_ALLOW_UNMAPPED:-true}
+      INGEST_GATEWAY_ACCEPT_TOKEN_ID_HEADER: ${INGEST_GATEWAY_ACCEPT_TOKEN_ID_HEADER:-false}
+    volumes:
+      - ./:/app
+    ports:
+      - "${INGEST_GATEWAY_PORT:-4318}:4318"
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.150.1
     command: ["--config=/etc/otelcol-contrib/config.yaml"]
@@ -6,8 +32,6 @@ services:
     volumes:
       - ./configs/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
     ports:
-      - "4317:4317"
-      - "4318:4318"
       - "13133:13133"
     depends_on:
       - loki
@@ -59,16 +83,118 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codex}
     volumes:
       - ./configs/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./configs/user-mapping-sample.csv:/seed-data/user-mapping-sample.csv:ro
       - postgres17-data:/var/lib/postgresql/data
     ports:
       - "${POSTGRES_HOST_PORT:-5432}:5432"
+
+  ops-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile.ops-exporter
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-codex_observability}
+      PGUSER: ${POSTGRES_USER:-codex}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-codex}
+      PGTZ: ${STACK_TIMEZONE:-Asia/Seoul}
+      EXPORTER_PORT: 9107
+      EXPORTER_REFRESH_SECONDS: ${OPS_EXPORTER_REFRESH_SECONDS:-60}
+      OPS_TOOL_STATS_LOOKBACK_MINUTES: ${OPS_TOOL_STATS_LOOKBACK_MINUTES:-30}
+      OPS_API_STATS_LOOKBACK_MINUTES: ${OPS_API_STATS_LOOKBACK_MINUTES:-30}
+      ALERT_TEAM_BUDGET_WARNING_RATIO: ${ALERT_TEAM_BUDGET_WARNING_RATIO:-0.70}
+      ALERT_TEAM_BUDGET_CRITICAL_RATIO: ${ALERT_TEAM_BUDGET_CRITICAL_RATIO:-0.90}
+      ALERT_USER_DAILY_COST_USD: ${ALERT_USER_DAILY_COST_USD:-25}
+      ALERT_COMPANY_DAILY_COST_USD: ${ALERT_COMPANY_DAILY_COST_USD:-250}
+      ALERT_TOOL_FAILURE_RATE_RATIO: ${ALERT_TOOL_FAILURE_RATE_RATIO:-0.10}
+      ALERT_API_FAILURE_RATE_RATIO: ${ALERT_API_FAILURE_RATE_RATIO:-0.05}
+      ALERT_TOOL_P95_DURATION_MS: ${ALERT_TOOL_P95_DURATION_MS:-5000}
+      ALERT_DATA_GAP_SECONDS: ${ALERT_DATA_GAP_SECONDS:-1800}
+      ALERT_RETENTION_JOB_STALE_SECONDS: ${ALERT_RETENTION_JOB_STALE_SECONDS:-129600}
+      ALERT_LOKI_RETENTION_STALE_SECONDS: ${ALERT_LOKI_RETENTION_STALE_SECONDS:-86400}
+      LOKI_RETENTION_DAYS: ${LOKI_RETENTION_DAYS:-14}
+      PROMETHEUS_RETENTION_DAYS: ${PROMETHEUS_RETENTION_DAYS:-180}
+      TEMPO_RETENTION_DAYS: ${TEMPO_RETENTION_DAYS:-7}
+      POSTGRES_RAW_EVENT_RETENTION_DAYS: ${POSTGRES_RAW_EVENT_RETENTION_DAYS:-30}
+      POSTGRES_NORMALIZED_RETENTION_DAYS: ${POSTGRES_NORMALIZED_RETENTION_DAYS:-365}
+      LOKI_VOLUME_CAPACITY_BYTES: ${LOKI_VOLUME_CAPACITY_BYTES:-2147483648}
+      PROMETHEUS_VOLUME_CAPACITY_BYTES: ${PROMETHEUS_VOLUME_CAPACITY_BYTES:-2147483648}
+      TEMPO_VOLUME_CAPACITY_BYTES: ${TEMPO_VOLUME_CAPACITY_BYTES:-2147483648}
+      POSTGRES_VOLUME_CAPACITY_BYTES: ${POSTGRES_VOLUME_CAPACITY_BYTES:-2147483648}
+    volumes:
+      - ./scripts/task6_ops_exporter.sh:/usr/local/bin/task6_ops_exporter.sh:ro
+      - ./scripts/task6_ops_http_server.py:/usr/local/bin/task6_ops_http_server.py:ro
+      - loki-data:/data/loki:ro
+      - prometheus-data:/data/prometheus:ro
+      - tempo-data:/data/tempo:ro
+      - postgres17-data:/data/postgres:ro
+    command: ["/bin/sh", "/usr/local/bin/task6_ops_exporter.sh"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9107/healthz', timeout=2).status == 200 else 1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "9107:9107"
+
+  cron-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    restart: unless-stopped
+    depends_on:
+      - loki
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-codex_observability}
+      POSTGRES_USER: ${POSTGRES_USER:-codex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codex}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-codex}
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      SCHEDULER_NORMALIZE_USAGE_INTERVAL_SECONDS: ${SCHEDULER_NORMALIZE_USAGE_INTERVAL_SECONDS:-60}
+      SCHEDULER_NORMALIZE_TOOL_INTERVAL_SECONDS: ${SCHEDULER_NORMALIZE_TOOL_INTERVAL_SECONDS:-60}
+      SCHEDULER_NORMALIZE_API_INTERVAL_SECONDS: ${SCHEDULER_NORMALIZE_API_INTERVAL_SECONDS:-60}
+      SCHEDULER_NORMALIZE_TRACE_INTERVAL_SECONDS: ${SCHEDULER_NORMALIZE_TRACE_INTERVAL_SECONDS:-60}
+      SCHEDULER_NORMALIZE_USAGE_LOOKBACK_SECONDS: ${SCHEDULER_NORMALIZE_USAGE_LOOKBACK_SECONDS:-300}
+      SCHEDULER_NORMALIZE_TOOL_LOOKBACK_SECONDS: ${SCHEDULER_NORMALIZE_TOOL_LOOKBACK_SECONDS:-300}
+      SCHEDULER_NORMALIZE_API_LOOKBACK_SECONDS: ${SCHEDULER_NORMALIZE_API_LOOKBACK_SECONDS:-300}
+      SCHEDULER_NORMALIZE_TRACE_LOOKBACK_SECONDS: ${SCHEDULER_NORMALIZE_TRACE_LOOKBACK_SECONDS:-900}
+      SCHEDULER_NORMALIZE_CHUNK_SECONDS: ${SCHEDULER_NORMALIZE_CHUNK_SECONDS:-300}
+      SCHEDULER_USAGE_PIPELINE_NAME: ${SCHEDULER_USAGE_PIPELINE_NAME:-scheduler-usage-events-v1}
+      SCHEDULER_TOOL_PIPELINE_NAME: ${SCHEDULER_TOOL_PIPELINE_NAME:-scheduler-tool-events-v1}
+      SCHEDULER_API_PIPELINE_NAME: ${SCHEDULER_API_PIPELINE_NAME:-scheduler-api-request-events-v1}
+      SCHEDULER_TRACE_PIPELINE_NAME: ${SCHEDULER_TRACE_PIPELINE_NAME:-scheduler-trace-spans-v1}
+      SCHEDULER_TRACE_SEARCH_LIMIT: ${SCHEDULER_TRACE_SEARCH_LIMIT:-500}
+      SCHEDULER_COMPUTE_DAILY_INTERVAL_SECONDS: ${SCHEDULER_COMPUTE_DAILY_INTERVAL_SECONDS:-300}
+      SCHEDULER_PURGE_RAW_INTERVAL_SECONDS: ${SCHEDULER_PURGE_RAW_INTERVAL_SECONDS:-86400}
+      SCHEDULER_DROP_OLD_ROWS_INTERVAL_SECONDS: ${SCHEDULER_DROP_OLD_ROWS_INTERVAL_SECONDS:-86400}
+      POSTGRES_RAW_EVENT_RETENTION_DAYS: ${POSTGRES_RAW_EVENT_RETENTION_DAYS:-30}
+      POSTGRES_NORMALIZED_RETENTION_DAYS: ${POSTGRES_NORMALIZED_RETENTION_DAYS:-365}
+    volumes:
+      - ./:/app
 
   grafana:
     image: grafana/grafana:13.0.1
     restart: unless-stopped
     depends_on:
       - alertmanager
+      - cron-scheduler
       - loki
+      - ops-exporter
       - prometheus
       - tempo
       - postgres

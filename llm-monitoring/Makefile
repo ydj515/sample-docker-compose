@@ -5,6 +5,7 @@
   task6-schema task6-api-schema task6-api-normalize task6-verify \
   task7-schema task7-normalize task7-verify \
   task8-schema task8-normalize task8-helper-sample task8-sample-mixed task8-verify \
+  task9-schema task9-verify \
   fn-call-schema fn-call-normalize fn-call-sample fn-call-verify \
   enrich-import-csv enrich-backfill enrich-report \
   cost-purge-raw cost-purge-old cost-recompute
@@ -55,7 +56,7 @@ task4-verify:
 
 # ── TASK-5: Cost 계산 및 정산용 데이터 모델 ─────────────────
 task5-schema:
-	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/004-task5-cost-schema.sql
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/004-cost-schema.sql
 
 task5-cost-compute:
 	python3 scripts/calculate_costs.py compute-daily
@@ -73,10 +74,10 @@ task5-verify:
 
 # ── TASK-6: 운영 안정화 및 알림 ─────────────────────────────
 task6-schema:
-	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/005-task6-ops-schema.sql
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/005-ops-schema.sql
 
 task6-api-schema:
-	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/006-task6-api-request-schema.sql
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/006-api-request-schema.sql
 
 task6-api-normalize:
 	python3 scripts/normalize_api_request_events.py
@@ -90,7 +91,7 @@ task6-verify:
 
 # ── TASK-7: Trace 기반 병목 분석 ────────────────────────────
 task7-schema:
-	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/010-task7-trace-schema.sql
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/010-trace-schema.sql
 
 task7-normalize:
 	python3 scripts/normalize_trace_spans.py
@@ -105,13 +106,13 @@ task7-verify:
 
 # ── TASK-8: 프롬프트 개선 분석 ────────────────────────────────
 task8-schema:
-	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/011-task8-prompt-efficiency-schema.sql
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/011-prompt-efficiency-schema.sql
 
 task8-normalize:
 	python3 scripts/normalize_local_helper_events.py
 
 task8-helper-sample:
-	python3 scripts/codex_local_helper.py --config examples/codex.local-helper.toml.example --payload "{\"type\":\"agent-turn-complete\",\"thread-id\":\"conv-task8-sample-1\",\"turn-id\":\"turn-task8-1\",\"cwd\":\"$(CURDIR)\",\"input-messages\":[\"README와 docker compose 기준으로 prompt efficiency dashboard 구현 상태를 점검하고 누락된 패널을 찾아줘.\"],\"last-assistant-message\":\"알겠습니다. 관련 스키마와 대시보드를 점검하겠습니다.\"}"
+	python3 scripts/codex_local_helper.py --config examples/codex.local-helper.toml.example '{"type":"agent-turn-complete","thread-id":"conv-task8-sample-1","turn-id":"turn-task8-1","cwd":"$(CURDIR)","input-messages":["README와 docker compose 기준으로 prompt efficiency dashboard 구현 상태를 점검하고 누락된 패널을 찾아줘."],"last-assistant-message":"알겠습니다. 관련 스키마와 대시보드를 점검하겠습니다."}'
 
 task8-sample-mixed:
 	python3 scripts/send_sample_otel.py --response-id resp-task8-1 --session-id session-task8-1 --conversation-id conv-task8-sample-1 --input-tokens 1800 --output-tokens 420 --cached-input-tokens 300 --reasoning-tokens 80 --total-tokens 2220 --tool shell.exec --tool-call-id toolcall-task8-1 --tool-duration-ms 340 --tool-output-size 2048
@@ -124,6 +125,16 @@ task8-verify:
 	$(MAKE) task4-normalize
 	$(MAKE) task6-api-normalize
 	$(MAKE) task7-normalize
+	$(MAKE) task8-normalize
+	python3 scripts/calculate_costs.py compute-daily --date $$(date +%Y-%m-%d)
+
+# ── TASK-9: Usage context enrichment ─────────────────────────
+task9-schema:
+	docker exec -i llm-monitoring-postgres-1 psql -U codex -d codex_observability -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/012-usage-context-schema.sql
+
+task9-verify:
+	$(MAKE) task9-schema
+	$(MAKE) task3-normalize
 	$(MAKE) task8-normalize
 	python3 scripts/calculate_costs.py compute-daily --date $$(date +%Y-%m-%d)
 
