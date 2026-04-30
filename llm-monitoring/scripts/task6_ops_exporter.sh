@@ -306,17 +306,8 @@ run_updater_loop() {
 
 serve_http_forever() {
   mkdir -p "${EXPORTER_WEB_ROOT}"
-
-  while true
-  do
-    {
-      printf 'HTTP/1.1 200 OK\r\n'
-      printf 'Content-Type: text/plain; version=0.0.4; charset=utf-8\r\n'
-      printf 'Connection: close\r\n'
-      printf '\r\n'
-      cat "${METRICS_FILE}"
-    } | nc -l -p "${EXPORTER_PORT}"
-  done
+  export METRICS_FILE
+  exec python3 /usr/local/bin/task6_ops_http_server.py
 }
 
 main() {

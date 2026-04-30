@@ -28,8 +28,10 @@ from pathlib import Path
 
 try:
     import tomllib
+    HAS_TOMLLIB = True
 except ModuleNotFoundError:  # pragma: no cover
-    import tomli as tomllib  # type: ignore
+    tomllib = None  # type: ignore[assignment]
+    HAS_TOMLLIB = False
 
 
 HELPER_VERSION = "0.1.0"
@@ -51,7 +53,58 @@ def attr(key: str, value: str) -> dict:
 def load_toml(path: Path) -> dict:
     if not path.exists():
         return {}
-    return tomllib.loads(path.read_text(encoding="utf-8"))
+    raw_text = path.read_text(encoding="utf-8")
+    if HAS_TOMLLIB:
+        return tomllib.loads(raw_text)
+    return parse_simple_toml(raw_text)
+
+
+def parse_simple_toml(raw_text: str) -> dict:
+    """tomllib가 없는 Python 3.9 환경용 최소 TOML 파서.
+
+    helper 설정 파일처럼 `[section]` + `key = value` 형태만 지원한다.
+    Codex 본 설정처럼 더 복잡한 TOML은 load_codex_otel_config의 regex fallback에 맡긴다.
+    """
+
+    result: dict[str, object] = {}
+    current: dict[str, object] = result
+
+    for raw_line in raw_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            section_name = line[1:-1].strip()
+            if not section_name:
+                continue
+            section = result.get(section_name)
+            if not isinstance(section, dict):
+                section = {}
+                result[section_name] = section
+            current = section
+            continue
+        if "=" not in line:
+            continue
+
+        key, raw_value = line.split("=", 1)
+        key = key.strip()
+        value = raw_value.strip()
+
+        if "#" in value and not value.startswith('"'):
+            value = value.split("#", 1)[0].strip()
+
+        if value.startswith('"') and value.endswith('"'):
+            parsed: object = bytes(value[1:-1], "utf-8").decode("unicode_escape")
+        elif value.lower() == "true":
+            parsed = True
+        elif value.lower() == "false":
+            parsed = False
+        else:
+            parsed = value
+
+        current[key] = parsed
+
+    return result
 
 
 def expand_path(raw: str) -> Path:
@@ -78,10 +131,12 @@ def load_helper_config(path: Path) -> dict:
 
 def load_codex_otel_config(path: Path) -> dict:
     raw_text = path.read_text(encoding="utf-8") if path.exists() else ""
-    try:
-        data = tomllib.loads(raw_text) if raw_text else {}
-    except tomllib.TOMLDecodeError:
-        data = {}
+    data = {}
+    if raw_text and HAS_TOMLLIB:
+        try:
+            data = tomllib.loads(raw_text)
+        except tomllib.TOMLDecodeError:
+            data = {}
 
     otel = data.get("otel", {})
     exporter = otel.get("exporter", {})

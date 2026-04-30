@@ -2,7 +2,7 @@
 """user_email -> 내부 canonical user/team 매핑 관리 및 enrichment job.
 
 서브커맨드:
-  import-csv  : CSV 파일에서 codex_user_email_mapping 에 upsert
+  import-csv  : CSV 파일에서 canonical user + email alias 를 함께 upsert
   backfill    : usage/tool/api/fn_call events 의 resolved identity 컬럼을 채움
   report      : 이벤트에 등장한 user 중 매핑 미존재 목록 출력
 """
@@ -11,11 +11,9 @@ from __future__ import annotations
 
 import argparse
 import csv
-import io
 import json
 import subprocess
 from pathlib import Path
-from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -98,6 +96,7 @@ def psql_query(
 CSV_FIELDS = [
     "user_email",
     "resolved_user_id",
+    "canonical_email",
     "display_name",
     "team",
     "department",
@@ -109,20 +108,25 @@ CSV_FIELDS = [
 ]
 
 
-def _str_or_null(value: str) -> str:
+def normalize_optional(value: str) -> str | None:
     stripped = value.strip()
     if stripped == "":
-        return "null"
-    return sql_literal(stripped)
+        return None
+    return stripped
 
 
-def _bool_or_null(value: str) -> str:
+def normalize_email(value: str) -> str | None:
+    stripped = normalize_optional(value)
+    if stripped is None:
+        return None
+    return stripped.lower()
+
+
+def parse_is_active(value: str) -> bool:
     stripped = value.strip().lower()
-    if stripped in ("true", "1", "yes", "y"):
-        return "true"
     if stripped in ("false", "0", "no", "n"):
-        return "false"
-    return "true"  # 기본값
+        return False
+    return True
 
 
 def load_csv(csv_file: Path) -> list[dict[str, str]]:
@@ -144,28 +148,161 @@ def load_csv(csv_file: Path) -> list[dict[str, str]]:
     return rows
 
 
+def _merge_canonical_field(
+    target: dict[str, str | bool | None],
+    field: str,
+    value: str | None,
+    *,
+    row_number: int,
+    resolved_user_id: str,
+) -> None:
+    if value is None:
+        return
+    existing = target.get(field)
+    if existing is not None and existing != value:
+        raise ValueError(
+            f"{row_number}행 resolved_user_id={resolved_user_id} 의 {field} 값이 충돌합니다: "
+            f"{existing} != {value}"
+        )
+    target[field] = value
+
+
+def build_canonical_users(rows: list[dict[str, str]]) -> list[dict[str, str | bool | None]]:
+    """alias CSV를 canonical user master row 목록으로 집계한다."""
+    alias_to_user: dict[str, str] = {}
+    canonical_users: dict[str, dict[str, str | bool | None]] = {}
+
+    for row_number, row in enumerate(rows, start=2):
+        user_email = normalize_email(row.get("user_email", ""))
+        resolved_user_id = normalize_optional(row.get("resolved_user_id", ""))
+        if user_email is None:
+            continue
+
+        previous_user_id = alias_to_user.get(user_email)
+        next_user_id = resolved_user_id or ""
+        if previous_user_id is not None and previous_user_id != next_user_id:
+            raise ValueError(
+                f"{row_number}행 user_email={user_email} 의 resolved_user_id 값이 충돌합니다: "
+                f"{previous_user_id or '(empty)'} != {next_user_id or '(empty)'}"
+            )
+        alias_to_user[user_email] = next_user_id
+
+        if resolved_user_id is None:
+            continue
+
+        canonical_user = canonical_users.setdefault(
+            resolved_user_id,
+            {
+                "user_id": resolved_user_id,
+                "display_name": None,
+                "email": None,
+                "team": None,
+                "department": None,
+                "active": False,
+            },
+        )
+        _merge_canonical_field(
+            canonical_user,
+            "display_name",
+            normalize_optional(row.get("display_name", "")),
+            row_number=row_number,
+            resolved_user_id=resolved_user_id,
+        )
+        _merge_canonical_field(
+            canonical_user,
+            "email",
+            normalize_email(row.get("canonical_email", "")),
+            row_number=row_number,
+            resolved_user_id=resolved_user_id,
+        )
+        _merge_canonical_field(
+            canonical_user,
+            "team",
+            normalize_optional(row.get("team", "")),
+            row_number=row_number,
+            resolved_user_id=resolved_user_id,
+        )
+        _merge_canonical_field(
+            canonical_user,
+            "department",
+            normalize_optional(row.get("department", "")),
+            row_number=row_number,
+            resolved_user_id=resolved_user_id,
+        )
+        canonical_user["active"] = bool(canonical_user["active"]) or parse_is_active(
+            row.get("is_active", "")
+        )
+
+    return list(canonical_users.values())
+
+
 def cmd_import_csv(args: argparse.Namespace, container: str) -> int:
     rows = load_csv(args.csv_file)
     if not rows:
         print("import 할 row 가 없습니다.")
         return 0
+    canonical_users = build_canonical_users(rows)
 
-    print(f"CSV 에서 {len(rows)}개 row 로드 완료")
+    print(
+        f"CSV 에서 email alias {len(rows)}개, canonical user {len(canonical_users)}개 로드 완료"
+    )
 
     if args.dry_run:
         for row in rows[:5]:
             print(f"  {row}")
+        for row in canonical_users[:5]:
+            print(f"  canonical={row}")
         return 0
 
     # JSON 배열로 일괄 upsert
-    payload = json.dumps(rows, ensure_ascii=True)
+    alias_payload = json.dumps(rows, ensure_ascii=True)
+    canonical_payload = json.dumps(canonical_users, ensure_ascii=True)
     source = sql_literal(args.source)
     sql = f"""
-with rows as (
+with canonical_rows as (
     select *
-    from jsonb_to_recordset($json${payload}$json$::jsonb) as x(
+    from jsonb_to_recordset($json${canonical_payload}$json$::jsonb) as x(
+        user_id text,
+        display_name text,
+        email text,
+        team text,
+        department text,
+        active boolean
+    )
+)
+insert into codex_user_mapping (
+    user_id,
+    display_name,
+    email,
+    team,
+    department,
+    active,
+    updated_at
+)
+select
+    nullif(trim(user_id), ''),
+    nullif(trim(display_name), ''),
+    lower(nullif(trim(email), '')),
+    nullif(trim(team), ''),
+    nullif(trim(department), ''),
+    coalesce(active, true),
+    now()
+from canonical_rows
+where user_id is not null and trim(user_id) <> ''
+on conflict (user_id) do update set
+    display_name = coalesce(excluded.display_name, codex_user_mapping.display_name),
+    email = coalesce(excluded.email, codex_user_mapping.email),
+    team = coalesce(excluded.team, codex_user_mapping.team),
+    department = coalesce(excluded.department, codex_user_mapping.department),
+    active = excluded.active,
+    updated_at = now();
+
+with alias_rows as (
+    select *
+    from jsonb_to_recordset($json${alias_payload}$json$::jsonb) as x(
         user_email text,
         resolved_user_id text,
+        canonical_email text,
         display_name text,
         team text,
         department text,
@@ -191,7 +328,7 @@ insert into codex_user_email_mapping (
     updated_at
 )
 select
-    lower(user_email),
+    lower(nullif(trim(user_email), '')),
     nullif(trim(resolved_user_id), ''),
     nullif(trim(display_name), ''),
     nullif(trim(team), ''),
@@ -222,7 +359,10 @@ on conflict (user_email) do update set
     updated_at    = now();
 """
     psql_query(container, args.postgres_user, args.postgres_db, sql)
-    print(f"{len(rows)}개 mapping upsert 완료 (source={args.source})")
+    print(
+        f"canonical user {len(canonical_users)}개, email alias {len(rows)}개 upsert 완료 "
+        f"(source={args.source})"
+    )
     return 0
 
 
@@ -384,13 +524,14 @@ order by has_mapping, user_email;
 
 def main() -> int:
     args = parse_args()
-    container = resolve_postgres_container()
     if args.command == "import-csv":
-        return cmd_import_csv(args, container)
+        if args.dry_run:
+            return cmd_import_csv(args, "")
+        return cmd_import_csv(args, resolve_postgres_container())
     if args.command == "backfill":
-        return cmd_backfill(args, container)
+        return cmd_backfill(args, resolve_postgres_container())
     if args.command == "report":
-        return cmd_report(args, container)
+        return cmd_report(args, resolve_postgres_container())
     print(f"알 수 없는 서브커맨드: {args.command}")
     return 1
 
