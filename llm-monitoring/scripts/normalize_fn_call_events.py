@@ -333,7 +333,7 @@ def upsert_records(
     sql = f"""
 with rows as (
     select *
-    from jsonb_to_recordset($json${payload}$json$::jsonb) as x(
+    from jsonb_to_recordset({sql_literal(payload)}::jsonb) as x(
         source_fingerprint text,
         source_timestamp_ns bigint,
         event_time_epoch_ms bigint,

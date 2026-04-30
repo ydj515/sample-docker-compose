@@ -5,8 +5,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client ca-certificates \
+    && useradd --system --create-home --home-dir /home/appuser appuser \
+    && mkdir -p /app \
+    && chown -R appuser:appuser /app \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+COPY --chown=appuser:appuser scripts/ /app/scripts/
+
+USER appuser
 
 CMD ["python3", "scripts/run_scheduler.py"]

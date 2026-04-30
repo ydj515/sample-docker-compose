@@ -5,9 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client ca-certificates \
-    && pip install --no-cache-dir protobuf==6.33.6 opentelemetry-proto==1.41.1 \
+    && pip install --no-cache-dir protobuf==6.33.6 opentelemetry-proto==1.41.0 \
+    && useradd --system --create-home --home-dir /home/appuser appuser \
+    && mkdir -p /app \
+    && chown -R appuser:appuser /app \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+COPY --chown=appuser:appuser scripts/ /app/scripts/
+
+USER appuser
 
 CMD ["python3", "scripts/otlp_ingest_gateway.py"]

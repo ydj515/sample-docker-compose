@@ -261,7 +261,7 @@ def cmd_import_csv(args: argparse.Namespace, container: str) -> int:
     sql = f"""
 with canonical_rows as (
     select *
-    from jsonb_to_recordset($json${canonical_payload}$json$::jsonb) as x(
+    from jsonb_to_recordset({sql_literal(canonical_payload)}::jsonb) as x(
         user_id text,
         display_name text,
         email text,
@@ -299,7 +299,7 @@ on conflict (user_id) do update set
 
 with alias_rows as (
     select *
-    from jsonb_to_recordset($json${alias_payload}$json$::jsonb) as x(
+    from jsonb_to_recordset({sql_literal(alias_payload)}::jsonb) as x(
         user_email text,
         resolved_user_id text,
         canonical_email text,
@@ -343,7 +343,7 @@ select
     {source},
     nullif(trim(notes), ''),
     now()
-from rows
+from alias_rows
 where user_email is not null and trim(user_email) <> ''
 on conflict (user_email) do update set
     resolved_user_id = coalesce(excluded.resolved_user_id, codex_user_email_mapping.resolved_user_id),

@@ -277,7 +277,7 @@ docker compose exec -T cron-scheduler \
 
 현재 구현 기준으로 `expires_at`는 조회와 운영 기록에는 사용되지만, gateway가 이를 보고 자동으로 `403` 차단을 하지는 않는다. 만료 통제가 필요하면 현재는 `revoke`를 사용해야 한다.
 
-상세 운영 절차는 [docs/RUNBOOK-INGEST-TOKEN.md](/Users/dongjin/dev/study/sample-docker-compose/llm-monitoring/docs/RUNBOOK-INGEST-TOKEN.md:1)에 정리돼 있다.
+상세 운영 절차는 [docs/RUNBOOK-INGEST-TOKEN.md](docs/RUNBOOK-INGEST-TOKEN.md)에 정리돼 있다.
 
 ## 6.1 Identity Resolution 모델
 
@@ -488,7 +488,7 @@ bash scripts/install_codex_local_helper.sh
 
 그 뒤 install script가 출력한 top-level `notify = [...]` snippet을 `~/.codex/config.toml`에 추가한다.
 
-상세 절차와 collected field 정책은 [docs/RUNBOOK-LOCAL-HELPER.md](/Users/dongjin/dev/study/sample-docker-compose/llm-monitoring/docs/RUNBOOK-LOCAL-HELPER.md:1)에 정리돼 있다.
+상세 절차와 collected field 정책은 [docs/RUNBOOK-LOCAL-HELPER.md](docs/RUNBOOK-LOCAL-HELPER.md)에 정리돼 있다.
 
 중요한 점은 현재 helper MVP가 `notify` 기반이라는 점이다. 따라서 `agent-turn-complete` 요약 이벤트는 수집할 수 있지만, human approval wait time을 계산할 수 있는 정밀 `approval_requested/completed` pair는 아직 없다. 이 부분은 같은 helper에 hook 기반 또는 별도 로컬 이벤트 소스를 추가해 확장한다.
 
@@ -507,7 +507,7 @@ bash scripts/install_codex_local_helper.sh
 
 현재 구현은 `thread_id = conversation_id`와 `이전 helper event ~ 현재 helper event` window를 사용해 helper turn과 usage/tool/api/cost/trace를 상관분석한다. 결과는 PostgreSQL `codex_prompt_turns_dashboard`, `codex_prompt_sessions_dashboard`, `codex_prompt_optimization_candidates_dashboard`와 Grafana `Codex Prompt Efficiency` 대시보드에서 확인할 수 있다.
 
-이 지표는 프롬프트 원문 품질을 직접 측정하는 것이 아니라, 길이 대비 산출량, 실패율, 비용, retry 경향을 간접적으로 해석하기 위한 것이다. 상세 해석 기준은 [docs/PROMPT-WRITING-GUIDE.md](/Users/dongjin/dev/study/sample-docker-compose/llm-monitoring/docs/PROMPT-WRITING-GUIDE.md:1)에 정리했다.
+이 지표는 프롬프트 원문 품질을 직접 측정하는 것이 아니라, 길이 대비 산출량, 실패율, 비용, retry 경향을 간접적으로 해석하기 위한 것이다. 상세 해석 기준은 [docs/PROMPT-WRITING-GUIDE.md](docs/PROMPT-WRITING-GUIDE.md)에 정리했다.
 
 ## 7. Retention 정책
 
@@ -688,7 +688,7 @@ python3 scripts/send_sample_otel.py
 - Grafana Explore 또는 Loki에서 raw event 검색
 - Grafana `Collector Health` 또는 Alertmanager에서 collector 상태/alert 확인
 
-상세 절차는 [docs/RUNBOOK-TASK-2.md](./docs/RUNBOOK-TASK-2.md)를 참고한다.
+상세 절차는 [docs/RUNBOOK-TASK-2.md](docs/RUNBOOK-TASK-2.md)를 참고한다.
 
 ## 12. TASK-3 로컬 검증 절차
 
@@ -704,7 +704,7 @@ make task3-normalize
 - `cached_input_tokens_available`, `reasoning_tokens_available`로 breakdown 제공 여부를 구분할 수 있다.
 - Grafana `Codex Token Usage - Models`, `Codex Token Usage - Teams`, `Codex Token Usage - Users`에서 기간/변수 필터가 동작한다.
 
-상세 절차는 [docs/RUNBOOK-TASK-3.md](./docs/RUNBOOK-TASK-3.md)를 참고한다.
+상세 절차는 [docs/RUNBOOK-TASK-3.md](docs/RUNBOOK-TASK-3.md)를 참고한다.
 
 ## 13. TASK-4 로컬 검증 절차
 
@@ -720,7 +720,7 @@ make task4-normalize
 - Grafana `Codex Tool Usage`에서 tool별 호출 수, 실패율, p95 duration을 확인할 수 있다.
 - 실패한 tool call과 느린 tool call을 테이블 패널에서 바로 조회할 수 있다.
 
-상세 절차는 [docs/RUNBOOK-TASK-4.md](./docs/RUNBOOK-TASK-4.md)를 참고한다.
+상세 절차는 [docs/RUNBOOK-TASK-4.md](docs/RUNBOOK-TASK-4.md)를 참고한다.
 
 ## 14. TASK-6 로컬 검증 절차
 
@@ -731,6 +731,16 @@ python3 scripts/calculate_costs.py compute-daily --date $(date +%Y-%m-%d)
 python3 scripts/calculate_costs.py purge-raw-events --older-than-days 30
 python3 scripts/calculate_costs.py drop-old-rows --older-than-days 365
 ```
+
+확인 포인트:
+
+- `curl http://localhost:9107/metrics`에서 `codex_team_budget_usage_ratio`, `codex_job_last_run_success`, `codex_store_usage_ratio`가 노출된다.
+- Prometheus target에서 `codex-ops-exporter`가 `up` 상태다.
+- Prometheus rule group `codex-operations-alerts`가 로드된다.
+- Grafana `Codex Operations Alerting` 대시보드가 보인다.
+- 현재 로컬 스택처럼 normalizer를 주기 실행하지 않으면 data gap alert가 `pending` 또는 `firing`으로 올라온다.
+
+상세 절차는 [docs/RUNBOOK-TASK-6.md](docs/RUNBOOK-TASK-6.md)를 참고한다.
 
 ## 15. TASK-8 로컬 검증 절차
 
@@ -748,19 +758,9 @@ python3 scripts/calculate_costs.py compute-daily --date $(date +%Y-%m-%d)
 - `codex_prompt_sessions_dashboard`에서 고비용 세션과 실패 turn 비율을 볼 수 있다.
 - Grafana `Codex Prompt Efficiency`에서 bucket 분석, 고비용 세션, 반복 실패 패턴, 개선 후보 turn이 보인다.
 
-상세 절차는 [docs/RUNBOOK-TASK-8.md](./docs/RUNBOOK-TASK-8.md)를 참고한다.
+상세 절차는 [docs/RUNBOOK-TASK-8.md](docs/RUNBOOK-TASK-8.md)를 참고한다.
 
-확인 포인트:
-
-- `curl http://localhost:9107/metrics`에서 `codex_team_budget_usage_ratio`, `codex_job_last_run_success`, `codex_store_usage_ratio`가 노출된다.
-- Prometheus target에서 `codex-ops-exporter`가 `up` 상태다.
-- Prometheus rule group `codex-operations-alerts`가 로드된다.
-- Grafana `Codex Operations Alerting` 대시보드가 보인다.
-- 현재 로컬 스택처럼 normalizer를 주기 실행하지 않으면 data gap alert가 `pending` 또는 `firing`으로 올라온다.
-
-상세 절차는 [docs/RUNBOOK-TASK-6.md](./docs/RUNBOOK-TASK-6.md)를 참고한다.
-
-## 15. 참고 문서
+## 16. 참고 문서
 
 - OpenAI Codex Advanced Configuration
   - https://developers.openai.com/codex/config-advanced#observability-and-telemetry

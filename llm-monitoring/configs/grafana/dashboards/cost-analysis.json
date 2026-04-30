@@ -986,7 +986,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select event_time, user_id, team, model, repository, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, total_tokens, round(total_estimated_cost::numeric,8) as estimated_cost_usd, price_policy_version, cost_accuracy from codex_usage_events_with_cost where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by event_time desc limit 100;",
+          "rawSql": "select event_time, user_id, team, model, repository, input_tokens, cached_input_tokens, output_tokens, reasoning_tokens, total_tokens, round(total_estimated_cost::numeric,8) as estimated_cost_usd, price_policy_version, cost_accuracy from codex_usage_events_with_cost where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) order by event_time desc limit 100;",
           "refId": "A"
         }
       ],

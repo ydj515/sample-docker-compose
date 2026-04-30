@@ -298,7 +298,7 @@ def upsert_records(target, args: argparse.Namespace, records: list[dict[str, Any
     sql = f"""
 with rows as (
     select *
-    from jsonb_to_recordset($json${payload}$json$::jsonb) as x(
+    from jsonb_to_recordset({sql_literal(payload)}::jsonb) as x(
         source_fingerprint text,
         trace_id text,
         span_id text,
@@ -450,20 +450,20 @@ def main() -> int:
 
         summaries = load_recent_trace_summaries(args)
         candidate_summaries = []
-        latest_ns = last_synced_ns
         for summary in summaries:
             start_ns = normalize_int(summary.get("startTimeUnixNano")) or 0
             if start_ns <= 0:
                 continue
-            latest_ns = max(latest_ns, start_ns)
             if start_ns >= threshold_ns:
                 candidate_summaries.append(summary)
 
         records: list[dict[str, Any]] = []
+        latest_ns = last_synced_ns
         for summary in sorted(
             candidate_summaries,
             key=lambda item: normalize_int(item.get("startTimeUnixNano")) or 0,
         ):
+            summary_start_ns = normalize_int(summary.get("startTimeUnixNano")) or 0
             trace_id = decode_otel_id(summary.get("traceID") or summary.get("traceId"), 32)
             if trace_id is None:
                 continue
@@ -477,6 +477,7 @@ def main() -> int:
             )
             if trace_records:
                 records.extend(trace_records)
+                latest_ns = max(latest_ns, summary_start_ns)
 
         if args.dry_run:
             print(

@@ -1,3 +1,14 @@
-FROM postgres:17.9-alpine
+FROM python:3.12-slim
 
-RUN apk add --no-cache python3
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    EXPORTER_WEB_ROOT=/var/www
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client ca-certificates \
+    && useradd --system --create-home --home-dir /home/appuser appuser \
+    && mkdir -p /var/www \
+    && chown -R appuser:appuser /var/www \
+    && rm -rf /var/lib/apt/lists/*
+
+USER appuser
