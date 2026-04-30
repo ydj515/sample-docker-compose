@@ -8,7 +8,7 @@
 
 ## 구성 요소
 
-- TASK-8 스키마: `configs/postgres/init/011-task8-prompt-efficiency-schema.sql`
+- TASK-8 스키마: `configs/postgres/init/011-prompt-efficiency-schema.sql`
 - Local helper normalizer: `scripts/normalize_local_helper_events.py`
 - Local helper 설치/연동: `scripts/codex_local_helper.py`, `scripts/install_codex_local_helper.sh`
 - Grafana 대시보드: `configs/grafana/dashboards/prompt-efficiency.json`
@@ -189,4 +189,4 @@ limit 20;
 - 현재 helper MVP는 `notify` 기반 turn-complete event까지만 수집한다.
 - human approval wait time을 직접 계산하는 `approval_requested/completed` pair event는 아직 없다.
 - prompt 원문 sampling과 redaction pipeline은 기본 비활성 상태이며, TASK-8 후속 보강 범위다.
-- 기존 `notify = [...]`가 이미 있으면 helper가 그 notifier를 대체할 수 있다. fan-out/wrapper는 아직 후속 구현이다.
+- 현재 install script는 `codex-notify-fanout.py`를 같이 설치하고 기존 `notify = [...]`를 fan-out config에 포함한다. 따라서 기존 notifier와 helper를 동시에 유지하는 것이 기본 경로다.

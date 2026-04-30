@@ -55,8 +55,6 @@ Codex CLI
 
 아래 항목은 `TASK-7`/`TASK-8`의 후속 local helper 고도화로 추적한다.
 
-- `notify` fan-out 또는 wrapper 도입
-  - 기존 `notify = [...]` 사용 환경을 덮어쓰지 않도록 개선
 - approval lifecycle hook 추가
   - `approval_requested`, `approval_completed`, `approval_outcome`
 - human approval wait time 계산
@@ -79,14 +77,14 @@ Codex CLI
 | P7-T06 | prompt 원문 샘플링 정책 검토 | Security | P3 | 후속 |
 | P7-T07 | redaction pipeline 구현 | Platform/Security | P3 | 후속 |
 | P7-T08 | prompt 개선 가이드 작성 | Developer Experience | P2 | 완료 |
-| P7-T09 | local helper notify fan-out | Platform | P3 | 후속 |
+| P7-T09 | local helper notify fan-out | Platform | P3 | 완료 |
 | P7-T10 | approval pair event hook | Platform | P3 | 후속 |
 
 ---
 
 ## 산출물
 
-- `configs/postgres/init/011-task8-prompt-efficiency-schema.sql`
+- `configs/postgres/init/011-prompt-efficiency-schema.sql`
 - `scripts/normalize_local_helper_events.py`
 - `codex_local_helper_events`, `codex_local_helper_sync_state`
 - `codex_prompt_turns_dashboard`

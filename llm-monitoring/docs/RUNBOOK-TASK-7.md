@@ -8,7 +8,7 @@
 
 ## 구성 요소
 
-- Trace 스키마: `configs/postgres/init/010-task7-trace-schema.sql`
+- Trace 스키마: `configs/postgres/init/010-trace-schema.sql`
 - Trace normalizer: `scripts/normalize_trace_spans.py`
 - Scheduler 통합: `scripts/run_scheduler.py`
 - Approval view: `codex_trace_approval_spans_dashboard`

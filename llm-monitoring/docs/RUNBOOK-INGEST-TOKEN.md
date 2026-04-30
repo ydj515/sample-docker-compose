@@ -30,11 +30,13 @@
 
 예시:
 
-- `resolved_user_id = dj.yoo`
+- `resolved_user_id = example`
 - `resolved_team = backend`
+- 대표 이메일:
+  - `example@example.com`
 - alias:
-  - `elwpdl515@naver.com -> dj.yoo`
-  - `yemy_82@boawe.com -> dj.yoo`
+  - `example.1@example.com -> example`
+  - `example.2@example.com -> example`
 
 ---
 

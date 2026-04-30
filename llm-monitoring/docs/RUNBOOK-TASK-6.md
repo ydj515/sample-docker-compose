@@ -8,9 +8,9 @@
 
 ## 구성 요소
 
-- Prometheus rule: `configs/prometheus/rules/task-6-alerts.yml`
+- Prometheus rule: `configs/prometheus/rules/codex-operations-alerts.yml`
 - 운영 메트릭 exporter: `scripts/task6_ops_exporter.sh`
-- 운영 스키마: `configs/postgres/init/005-task6-ops-schema.sql`
+- 운영 스키마: `configs/postgres/init/005-ops-schema.sql`
 - 운영 대시보드: `configs/grafana/dashboards/operations-alerting.json`
 
 ---
@@ -34,6 +34,12 @@ make task6-schema
 ## 검증 절차
 
 ### 1. 운영 exporter 확인
+
+```bash
+curl http://localhost:9107/healthz
+```
+
+응답 코드가 `200`이고 metrics 파일이 최근 갱신 상태여야 한다.
 
 ```bash
 curl http://localhost:9107/metrics
@@ -60,7 +66,7 @@ curl 'http://localhost:9090/api/v1/targets'
 curl 'http://localhost:9090/api/v1/rules'
 ```
 
-`codex-task-6` group이 로드되어 있어야 한다.
+`codex-operations-alerts` group이 로드되어 있어야 한다.
 
 ### 4. retention job 상태 seed
 

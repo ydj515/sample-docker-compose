@@ -142,9 +142,10 @@ create table codex_user_mapping (
 
 - `observed_user_email` 또는 raw `user_id`가 이메일 형식일 때 먼저 이 테이블을 본다.
 - 한 사람이 여러 계정을 쓸 수 있으므로 `codex_user_mapping`과 별도로 둔다.
+- canonical master의 대표 이메일은 `codex_user_mapping.email`에 두고, 실제 Codex 사용 alias만 이 테이블에 둔다.
 - 예:
-  - `elwpdl515@naver.com -> dj.yoo`
-  - `yemy_82@boawe.com -> dj.yoo`
+  - `example.1@example.com -> example`
+  - `example.2@example.com -> example`
 
 즉 `codex_user_mapping`은 사람 기준 master이고, `codex_user_email_mapping`은 이메일 alias 기준 매핑이다.
 
@@ -313,7 +314,7 @@ limit 10;
 
 ## 산출물
 
-- `configs/postgres/init/004-task5-cost-schema.sql`
+- `configs/postgres/init/004-cost-schema.sql`
   - `codex_model_price_policy` 테이블 + 초기 가격 데이터 (11개 모델)
   - `codex_user_mapping` 테이블 + 초기 user 데이터
   - `codex_team_budget` 테이블 + 초기 예산 데이터 (5개 팀)

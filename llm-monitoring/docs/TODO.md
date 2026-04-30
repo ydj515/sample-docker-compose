@@ -17,7 +17,7 @@ Codex CLI 사용량, 모델별 토큰 사용량, tool 사용 패턴, 팀별 비�
 | 5 | [TASK-5.md](./TASK-5.md) | Phase 4 | Cost 계산 및 정산용 데이터 모델 구축 | P1 | 로컬 기술 검증 완료 |
 | 6 | [TASK-6.md](./TASK-6.md) | Phase 5 | 운영 안정화 및 알림 | P1 | 로컬 alerting 및 scheduler 검증 완료, RBAC/HA 후속 |
 | 7 | [TASK-7.md](./TASK-7.md) | Phase 6 | Trace 기반 병목 분석 고도화 | P2 | 로컬 기술 검증 및 sampling/approval 정책 정의 완료 |
-| 8 | [TASK-8.md](./TASK-8.md) | Phase 7 | 프롬프트 개선 분석 고도화 | P2 | 로컬 기술 검증 완료, local helper fan-out/approval hook 후속 |
+| 8 | [TASK-8.md](./TASK-8.md) | Phase 7 | 프롬프트 개선 분석 고도화 | P2 | 로컬 기술 검증 완료, approval hook 후속 |
 
 ---
 
@@ -39,8 +39,6 @@ Codex CLI 사용량, 모델별 토큰 사용량, tool 사용 패턴, 팀별 비�
 
 `TASK-7`과 `TASK-8`의 본 구현은 완료했지만, local helper는 아래 항목을 후속 고도화로 계속 추적한다.
 
-- `notify` fan-out 또는 wrapper
-  - 기존 `notify = [...]` 사용자 환경을 덮어쓰지 않도록 개선
 - approval lifecycle hook
   - `approval_requested`, `approval_completed`, `approval_outcome`
 - human approval wait time 계산

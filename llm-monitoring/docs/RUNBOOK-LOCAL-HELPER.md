@@ -85,6 +85,8 @@ bash scripts/install_codex_local_helper.sh
 
 - helper script: `~/.codex/local-helper/codex-local-helper.py`
 - helper config: `~/.codex/codex-local-helper.toml`
+- notify fan-out script: `~/.codex/local-helper/codex-notify-fanout.py`
+- notify fan-out config: `~/.codex/codex-notify-fanout.json`
 
 ### 2. helper 설정 검토
 
@@ -110,13 +112,13 @@ install script가 출력한 top-level `notify = [...]` snippet을 `~/.codex/conf
 notify = [
   "/usr/bin/env",
   "python3",
-  "/Users/you/.codex/local-helper/codex-local-helper.py",
+  "/Users/you/.codex/local-helper/codex-notify-fanout.py",
   "--config",
-  "/Users/you/.codex/codex-local-helper.toml",
+  "/Users/you/.codex/codex-notify-fanout.json",
 ]
 ```
 
-이미 `~/.codex/config.toml`에 `notify = [...]`가 있다면 현재 MVP helper로 교체하는 형태가 된다. 기존 notifier를 유지하려면 helper에 fan-out 기능을 추가하거나 wrapper script를 별도로 두어야 한다.
+현재 install script는 기존 `notify = [...]`를 읽어 `codex-notify-fanout.json`에 함께 넣는다. 따라서 기존 notifier와 local helper를 동시에 유지하는 것이 기본 경로다.
 
 ### 4. Codex 세션 재시작
 

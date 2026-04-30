@@ -155,9 +155,9 @@
 
 ### 현재 구현 산출물
 
-- `configs/prometheus/rules/task-6-alerts.yml`
-- `configs/postgres/init/005-task6-ops-schema.sql`
-- `configs/postgres/init/006-task6-api-request-schema.sql`
+- `configs/prometheus/rules/codex-operations-alerts.yml`
+- `configs/postgres/init/005-ops-schema.sql`
+- `configs/postgres/init/006-api-request-schema.sql`
 - `scripts/task6_ops_exporter.sh`
 - `scripts/normalize_api_request_events.py`
 - `scripts/run_scheduler.py`
