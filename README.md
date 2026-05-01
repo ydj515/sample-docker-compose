@@ -11,3 +11,4 @@
 - redis : redis-single, redis-sentinel, redis-cluster
 - redis-sentinel : redis-sentinel cluster
 - redis-cluster : redis cluster
+- llm-monitoring : opentelemetryCollector, jaeger, loki, prometheus, tempo, promtail, grafana, postgresql, redis for codex monitoring
