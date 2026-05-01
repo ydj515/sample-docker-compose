@@ -1,0 +1,478 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(sum(total_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "전체 Token",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(sum(input_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "전체 Input Token",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(sum(visible_output_tokens), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "가시 Output Token",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(100.0 * avg(case when cached_input_tokens_available then 1.0 else 0.0 end), 2), 0) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "Cached Breakdown 제공률(%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select model, count(*) as requests, sum(input_tokens) as input_tokens, sum(coalesce(cached_input_tokens, 0)) as cached_input_tokens, sum(uncached_input_tokens) as uncached_input_tokens, sum(output_tokens) as output_tokens, sum(coalesce(reasoning_tokens, 0)) as reasoning_tokens, sum(visible_output_tokens) as visible_output_tokens, sum(total_tokens) as total_tokens from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by model order by total_tokens desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "모델별 Token Breakdown",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(event_time, '1d'), model as metric, sum(total_tokens) as value from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by 1, 2 order by 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "모델별 Token 추이",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select model, count(*) as total_requests, sum(case when cached_input_tokens_available then 1 else 0 end) as cached_breakdown_present, sum(case when reasoning_tokens_available then 1 else 0 end) as reasoning_breakdown_present from codex_usage_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) group by model order by total_requests desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "Breakdown 제공 여부",
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "codex",
+    "tokens",
+    "usage",
+    "models"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct team from codex_usage_events_dashboard where team is not null order by 1;",
+        "includeAll": true,
+        "label": "team",
+        "multi": false,
+        "name": "team",
+        "options": [],
+        "query": "select distinct team from codex_usage_events_dashboard where team is not null order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "user",
+        "multi": false,
+        "name": "user_id",
+        "options": [],
+        "query": "select distinct user_id from codex_usage_events_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct repository from codex_usage_events_dashboard where repository is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "repository",
+        "multi": false,
+        "name": "repository",
+        "options": [],
+        "query": "select distinct repository from codex_usage_events_dashboard where repository is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct model from codex_usage_events_dashboard where model is not null order by 1;",
+        "includeAll": true,
+        "label": "model",
+        "multi": false,
+        "name": "model",
+        "options": [],
+        "query": "select distinct model from codex_usage_events_dashboard where model is not null order by 1;",
+        "refresh": 2,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timezone": "",
+  "title": "Codex Token Usage - Models",
+  "uid": "codex-token-usage-models",
+  "version": 1,
+  "weekStart": ""
+}

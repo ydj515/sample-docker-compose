@@ -1,0 +1,19 @@
+[helper]
+# 비어 있으면 ~/.codex/config.toml 의 [otel].exporter.otlp-http.endpoint 를 재사용한다.
+logs_endpoint = ""
+
+# Codex OTel endpoint / headers / environment 를 읽어올 설정 파일.
+codex_config_path = "~/.codex/config.toml"
+
+# 전송되는 helper event 이름.
+event_name = "codex.local_helper_context"
+
+# 기본값은 privacy 우선.
+include_raw_cwd = false
+include_repo_root = true
+include_git_branch = true
+include_git_remote_slug = true
+collect_input_message_stats = true
+collect_last_assistant_message_stats = true
+collect_host_name = true
+redact_home_prefix = true

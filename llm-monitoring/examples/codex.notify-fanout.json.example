@@ -1,0 +1,27 @@
+{
+  "commands": [
+    {
+      "name": "existing_notify",
+      "argv": [
+        "/path/to/existing/notifier",
+        "turn-ended"
+      ],
+      "payload_mode": "argv",
+      "required": false,
+      "enabled": true
+    },
+    {
+      "name": "local_helper",
+      "argv": [
+        "/usr/bin/env",
+        "python3",
+        "/Users/you/.codex/local-helper/codex-local-helper.py",
+        "--config",
+        "/Users/you/.codex/codex-local-helper.toml"
+      ],
+      "payload_mode": "argv",
+      "required": false,
+      "enabled": true
+    }
+  ]
+}

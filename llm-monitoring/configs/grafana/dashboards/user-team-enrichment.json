@@ -1,0 +1,629 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "user_email -> 내부 user/team 매핑 커버리지 및 enrichment 현황",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "title": "매핑 커버리지 요약",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_user_email_mapping;",
+          "refId": "A"
+        }
+      ],
+      "title": "등록된 User 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_user_email_mapping where is_active = true;",
+          "refId": "A"
+        }
+      ],
+      "title": "활성 User 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, round(100.0 * sum(case when has_mapping then 1 else 0 end)::numeric       / nullif(count(*), 0), 2) as value from codex_user_mapping_coverage;",
+          "refId": "A"
+        }
+      ],
+      "title": "이벤트 User 매핑 커버리지(%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_user_mapping_coverage where has_mapping = false;",
+          "refId": "A"
+        }
+      ],
+      "title": "매핑 미존재 User 수",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 6,
+      "title": "Team / Department 분포",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  coalesce(m.team, '(unassigned)') as team,  count(*) as total_users,  sum(case when m.is_active then 1 else 0 end) as active_users,  count(distinct m.department) as department_count from codex_user_email_mapping m where ($v$${team:text}$v$ = $v$All$v$ or m.team = $v$${team:text}$v$) group by m.team order by total_users desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "Team별 User 분포",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  coalesce(m.department, '(unassigned)') as department,  coalesce(m.team, '(unassigned)') as team,  count(*) as total_users,  sum(case when m.is_active then 1 else 0 end) as active_users,  coalesce(m.cost_center, '') as cost_center from codex_user_email_mapping m where ($v$${department:text}$v$ = $v$All$v$ or m.department = $v$${department:text}$v$) group by m.department, m.team, m.cost_center order by total_users desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "Department별 User 분포",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 9,
+      "title": "매핑 미존재 User 및 전체 매핑 상세",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 0,
+        "y": 19
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select user_email from codex_user_mapping_coverage where has_mapping = false order by user_email;",
+          "refId": "A"
+        }
+      ],
+      "title": "매핑 미존재 User 목록",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 10,
+        "y": 19
+      },
+      "id": 11,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  m.user_email,  m.display_name,  m.team,  m.department,  m.cost_center,  m.github_handle,  m.is_active,  m.source,  m.updated_at from codex_user_email_mapping m where ($v$${team:text}$v$ = $v$All$v$ or m.team = $v$${team:text}$v$) and ($v$${department:text}$v$ = $v$All$v$ or m.department = $v$${department:text}$v$) order by m.team, m.user_email;",
+          "refId": "A"
+        }
+      ],
+      "title": "전체 매핑 상세",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 12,
+      "title": "이벤트 기준 Team 통계 (Enriched)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 13,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  coalesce(resolved_team, '(unknown)') as team,  count(*) as response_count,  sum(input_tokens) as total_input_tokens,  sum(output_tokens) as total_output_tokens,  sum(total_tokens) as total_tokens,  round(avg(total_tokens), 2) as avg_tokens_per_response from codex_usage_events_enriched where ($__timeFilter(event_time)) and (($v$${team:text}$v$ = $v$All$v$ or resolved_team = $v$${team:text}$v$)) group by resolved_team order by total_tokens desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "Team별 Token Usage (Enriched)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "id": 14,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  coalesce(resolved_team, '(unknown)') as team,  tool_name,  count(*) as call_count,  sum(case when tool_success = true then 1 else 0 end) as success_count,  round(100.0 * avg(case when tool_success = true then 1.0 when tool_success = false then 0.0 else null end), 2) as success_rate_pct,  round(avg(tool_duration_ms), 2) as avg_duration_ms from codex_tool_events_enriched where ($__timeFilter(event_time)) and event_name = 'codex.tool_result' and (($v$${team:text}$v$ = $v$All$v$ or resolved_team = $v$${team:text}$v$)) group by resolved_team, tool_name order by team, call_count desc;",
+          "refId": "A"
+        }
+      ],
+      "title": "Team별 Tool Usage (Enriched)",
+      "type": "table"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 38,
+  "tags": [
+    "codex",
+    "identity",
+    "enrichment",
+    "mapping"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select team from (select distinct team from codex_user_email_mapping where team is not null union select '(unassigned)' where not exists (select 1 from codex_user_email_mapping where team is not null)) teams order by team",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Team",
+        "multi": false,
+        "name": "team",
+        "options": [],
+        "query": "select team from (select distinct team from codex_user_email_mapping where team is not null union select '(unassigned)' where not exists (select 1 from codex_user_email_mapping where team is not null)) teams order by team",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select department from (select distinct department from codex_user_email_mapping where department is not null union select '(unassigned)' where not exists (select 1 from codex_user_email_mapping where department is not null)) departments order by department",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Department",
+        "multi": false,
+        "name": "department",
+        "options": [],
+        "query": "select department from (select distinct department from codex_user_email_mapping where department is not null union select '(unassigned)' where not exists (select 1 from codex_user_email_mapping where department is not null)) departments order by department",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "User-Team Enrichment",
+  "uid": "codex-user-enrichment",
+  "version": 1
+}

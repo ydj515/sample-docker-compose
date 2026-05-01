@@ -1,0 +1,1046 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_tool_results_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "전체 Tool Result",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(distinct conversation_id) as value from codex_tool_results_dashboard where $__timeFilter(event_time) and conversation_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "대화 세션 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(100.0 * avg(case when tool_success = true then 1.0 when tool_success = false then 0.0 else null end), 2), 0) as value from codex_tool_results_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "성공률(%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round((percentile_cont(0.95) within group (order by tool_duration_ms))::numeric, 2), 0) as value from codex_tool_results_dashboard where $__timeFilter(event_time) and tool_duration_ms is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$);",
+          "refId": "A"
+        }
+      ],
+      "title": "p95 Duration(ms)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "with filtered as (select * from codex_tool_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$)) select tool_name, sum(case when event_name = 'codex.tool_decision' then 1 else 0 end) as decision_events, sum(case when event_name = 'codex.tool_result' then 1 else 0 end) as result_events, sum(case when event_name = 'codex.tool_result' and tool_success = true then 1 else 0 end) as success_calls, sum(case when event_name = 'codex.tool_result' and tool_success = false then 1 else 0 end) as failed_calls, sum(case when event_name = 'codex.tool_result' and tool_success is null then 1 else 0 end) as unknown_calls, round(100.0 * avg(case when event_name = 'codex.tool_result' and tool_success = true then 1.0 when event_name = 'codex.tool_result' and tool_success = false then 0.0 else null end), 2) as success_rate_pct, round(avg(case when event_name = 'codex.tool_result' then tool_duration_ms else null end), 2) as avg_duration_ms, round((percentile_cont(0.50) within group (order by tool_duration_ms) filter (where event_name = 'codex.tool_result' and tool_duration_ms is not null))::numeric, 2) as p50_duration_ms, round((percentile_cont(0.95) within group (order by tool_duration_ms) filter (where event_name = 'codex.tool_result' and tool_duration_ms is not null))::numeric, 2) as p95_duration_ms, round((avg(tool_output_size) filter (where event_name = 'codex.tool_result' and tool_output_size is not null))::numeric, 2) as avg_output_size from filtered group by tool_name order by result_events desc, decision_events desc, tool_name;",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool별 Usage 집계",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(event_time, '5m'), tool_name as metric, round(avg(tool_duration_ms), 2) as value from codex_tool_results_dashboard where $__timeFilter(event_time) and tool_duration_ms is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$) group by 1, 2 order by 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool별 평균 Duration 추이",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select conversation_id, count(*) as total_calls, count(distinct tool_name) as distinct_tools, round(avg(tool_duration_ms), 2) as avg_duration_ms, round((percentile_cont(0.95) within group (order by tool_duration_ms))::numeric, 2) as p95_duration_ms, max(event_time) as last_event_time from codex_tool_results_dashboard where $__timeFilter(event_time) and conversation_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$) group by conversation_id order by last_event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "대화 세션별 Tool Result",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, user_id, conversation_id, tool_name, tool_call_id, model, tool_duration_ms, tool_success, tool_output_size from codex_tool_results_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$) order by event_time desc limit 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 실제 Tool Result",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "id": 9,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, user_id, conversation_id, tool_name, tool_call_id, model, tool_duration_ms, tool_error_code, tool_error_message, repository from codex_tool_results_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$) and tool_success = false order by event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "실패한 Tool Call",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "id": 10,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, user_id, conversation_id, tool_name, tool_call_id, model, tool_duration_ms, tool_success, tool_output_size from codex_tool_results_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and ($v$${tool:text}$v$ = $v$All$v$ or tool_name = $v$${tool:text}$v$) and tool_duration_ms is not null order by tool_duration_ms desc, event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "느린 Tool Call Top 50",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 11,
+      "title": "Tool Invocation Funnel (function_call_arguments)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 37
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_fn_call_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and is_done = false;",
+          "refId": "A"
+        }
+      ],
+      "title": "FnCall Delta 이벤트 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 37
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, count(*) as value from codex_fn_call_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and is_done = true;",
+          "refId": "A"
+        }
+      ],
+      "title": "FnCall Done 이벤트 수",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 37
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round(100.0 * count(distinct te.tool_call_id)::numeric / nullif(count(distinct fc.item_id), 0), 2), 0) as value from codex_fn_call_events_dashboard fc left join codex_tool_events_dashboard te   on fc.item_id = te.tool_call_id   and coalesce(fc.session_id, '') = coalesce(te.session_id, '')   and te.event_name = 'codex.tool_decision' where $__timeFilter(fc.event_time) and ($v$${team:text}$v$ = $v$All$v$ or fc.team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or fc.user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or fc.conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or fc.repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or fc.model = $v$${model:text}$v$) and fc.is_done = true;",
+          "refId": "A"
+        }
+      ],
+      "title": "Decision 연결률(%)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 37
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select now() as time, coalesce(round((percentile_cont(0.95) within group (order by arguments_size))::numeric, 0), 0) as value from codex_fn_call_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and is_done = true and arguments_size is not null;",
+          "refId": "A"
+        }
+      ],
+      "title": "Arguments p95 Size",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 14,
+        "x": 0,
+        "y": 43
+      },
+      "id": 16,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select  coalesce(f.tool_name, '(unknown)') as tool_name,  count(distinct f.item_id) as fn_call_done_count,  count(distinct case when f.tool_decision is not null then f.item_id end) as decision_count,  count(distinct case when f.tool_success is not null then f.item_id end) as result_count,  count(distinct case when f.tool_success = true then f.item_id end) as success_count,  round(100.0 * count(distinct case when f.tool_decision is not null then f.item_id end)    / nullif(count(distinct f.item_id), 0), 2) as decision_rate_pct,  round(avg(f.arguments_size), 0) as avg_arguments_bytes,  round((percentile_cont(0.95) within group (order by f.arguments_size))::numeric, 0) as p95_arguments_bytes,  round(avg(f.prep_to_decision_ms), 2) as avg_prep_to_decision_ms from codex_tool_invocation_funnel f where $__timeFilter(f.fn_call_done_at) and ($v$${team:text}$v$ = $v$All$v$ or f.team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or f.user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or f.conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or f.repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or f.model = $v$${model:text}$v$) group by f.tool_name order by fn_call_done_count desc, tool_name;",
+          "refId": "A"
+        }
+      ],
+      "title": "Tool별 Invocation Funnel 집계",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 10,
+        "x": 14,
+        "y": 43
+      },
+      "id": 17,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "select event_time, user_id, session_id, item_id, model, arguments_size from codex_fn_call_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and is_done = true order by event_time desc limit 50;",
+          "refId": "A"
+        }
+      ],
+      "title": "최근 FnCall Done 이벤트",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "lineWidth": 2
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 53
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "postgres"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "select $__timeGroupAlias(event_time, '5m'), round(avg(arguments_size), 0) as avg_arguments_bytes, round((percentile_cont(0.95) within group (order by arguments_size))::numeric, 0) as p95_arguments_bytes from codex_fn_call_events_dashboard where $__timeFilter(event_time) and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) and ($v$${repository:text}$v$ = $v$All$v$ or repository = $v$${repository:text}$v$) and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) and is_done = true and arguments_size is not null group by 1 order by 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Arguments Size 추이 (avg / p95)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "style": "dark",
+  "tags": [
+    "codex",
+    "tools",
+    "usage",
+    "latency"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct team from codex_tool_results_dashboard where team is not null order by 1;",
+        "includeAll": true,
+        "label": "team",
+        "multi": false,
+        "name": "team",
+        "options": [],
+        "query": "select distinct team from codex_tool_results_dashboard where team is not null order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct user_id from codex_tool_results_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "user",
+        "multi": false,
+        "name": "user_id",
+        "options": [],
+        "query": "select distinct user_id from codex_tool_results_dashboard where user_id is not null and ($v$${team:text}$v$ = $v$All$v$ or team = $v$${team:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct conversation_id from codex_tool_results_dashboard where conversation_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "conversation",
+        "multi": false,
+        "name": "conversation_id",
+        "options": [],
+        "query": "select distinct conversation_id from codex_tool_results_dashboard where conversation_id is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct repository from codex_tool_results_dashboard where repository is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "repository",
+        "multi": false,
+        "name": "repository",
+        "options": [],
+        "query": "select distinct repository from codex_tool_results_dashboard where repository is not null and ($v$${user_id:text}$v$ = $v$All$v$ or user_id = $v$${user_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct model from codex_tool_results_dashboard where model is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "model",
+        "multi": false,
+        "name": "model",
+        "options": [],
+        "query": "select distinct model from codex_tool_results_dashboard where model is not null and ($v$${conversation_id:text}$v$ = $v$All$v$ or conversation_id = $v$${conversation_id:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      },
+      {
+        "allValue": "__all",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres"
+        },
+        "definition": "select distinct tool_name from codex_tool_results_dashboard where tool_name is not null and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) order by 1;",
+        "includeAll": true,
+        "label": "tool",
+        "multi": false,
+        "name": "tool",
+        "options": [],
+        "query": "select distinct tool_name from codex_tool_results_dashboard where tool_name is not null and ($v$${model:text}$v$ = $v$All$v$ or model = $v$${model:text}$v$) order by 1;",
+        "refresh": 2,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Codex Tool Usage",
+  "uid": "codex-tool-usage",
+  "version": 2,
+  "weekStart": ""
+}
