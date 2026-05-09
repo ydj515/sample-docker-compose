@@ -144,7 +144,6 @@ curl -fsS http://localhost:9107/metrics | head -n 20
   - `PostgreSQL`
   - `Alertmanager`
 - [ ] 주요 dashboard가 보인다.
-  - `Codex MVP Overview`
   - `Collector Health`
   - `Codex Operations Alerting`
   - `Cost Analysis`

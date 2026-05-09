@@ -561,7 +561,6 @@ bash scripts/install_codex_local_helper.sh
   - Prometheus / Loki / Tempo / PostgreSQL / Alertmanager datasource 자동 연결
   - Tempo -> Loki traces-to-logs 상관분석 기본 설정 포함
 - `configs/grafana/dashboards`
-  - `Codex MVP Overview`
   - `Collector Health`
   - `Codex Token Usage - Models`
   - `Codex Token Usage - Teams`
@@ -684,7 +683,7 @@ python3 scripts/send_sample_otel.py
 
 확인 포인트:
 
-- Grafana `Codex MVP Overview`에서 모델별 요청 수와 Tool별 호출 수 확인
+- Grafana `Codex Token Usage - Models`, `Codex Tool Usage`에서 요청/호출 수 확인
 - Grafana Explore 또는 Loki에서 raw event 검색
 - Grafana `Collector Health` 또는 Alertmanager에서 collector 상태/alert 확인
 

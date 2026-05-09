@@ -87,9 +87,9 @@ sum by (tool) (last_over_time(codex_tool_call_total[1h]))
 
 ### 3. Grafana 대시보드 확인
 
-- `Codex MVP Overview`
-  - 전체 API 요청 수
+- `Codex Token Usage - Models`
   - 모델별 요청 수
+- `Codex Tool Usage`
   - Tool별 호출 수
 - `Collector Health`
   - 수신 로그 속도
