@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--loki-url", default="http://localhost:3100", help="Loki base URL")
     parser.add_argument(
         "--loki-query",
-        default='{service_name=~"codex-cli|codex_cli_rs"} |= "function_call_arguments"',
+        default='{service_name=~"codex-cli|codex_cli_rs|codex-app-server|Codex Desktop"} | event_kind=~"response[.]function_call_arguments[.].*"',
         help="Loki LogQL query",
     )
     parser.add_argument("--postgres-db", default="codex_observability", help="PostgreSQL database name")

@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--loki-query",
-        default='{service_name=~"codex-cli|codex_cli_rs"}',
+        default='{service_name=~"codex-cli|codex_cli_rs|codex-app-server|Codex Desktop"}',
         help="Loki LogQL query",
     )
     add_postgres_args(parser)
