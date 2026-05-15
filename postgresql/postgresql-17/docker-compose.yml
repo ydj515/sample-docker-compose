@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: ${POSTGRES_IMAGE:-postgres:17}
+    image: ${POSTGRES_IMAGE:-postgres:17.9-alpine}
     restart: always
     ports:
       # 호스트 포트:컨테이너 포트
