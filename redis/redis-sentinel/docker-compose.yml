@@ -1,6 +1,6 @@
 services:
   redis-master:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-master
     env_file:
       - .env
@@ -17,7 +17,7 @@ services:
         ipv4_address: 172.30.0.10
 
   redis-replica-1:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-replica-1
     env_file:
       - .env
@@ -36,7 +36,7 @@ services:
         ipv4_address: 172.30.0.11
 
   redis-replica-2:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-replica-2
     env_file:
       - .env
@@ -55,7 +55,7 @@ services:
         ipv4_address: 172.30.0.12
 
   sentinel-1:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-sentinel-1
     env_file:
       - .env
@@ -73,7 +73,7 @@ services:
         ipv4_address: 172.30.0.21
 
   sentinel-2:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-sentinel-2
     env_file:
       - .env
@@ -91,7 +91,7 @@ services:
         ipv4_address: 172.30.0.22
 
   sentinel-3:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-sentinel-3
     env_file:
       - .env

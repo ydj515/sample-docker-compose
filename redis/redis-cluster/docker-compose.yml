@@ -1,6 +1,6 @@
 services:
   redis-node-1:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-1
     env_file:
       - .env
@@ -18,7 +18,7 @@ services:
         ipv4_address: 172.31.0.11
 
   redis-node-2:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-2
     env_file:
       - .env
@@ -36,7 +36,7 @@ services:
         ipv4_address: 172.31.0.12
 
   redis-node-3:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-3
     env_file:
       - .env
@@ -54,7 +54,7 @@ services:
         ipv4_address: 172.31.0.13
 
   redis-node-4:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-4
     env_file:
       - .env
@@ -72,7 +72,7 @@ services:
         ipv4_address: 172.31.0.14
 
   redis-node-5:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-5
     env_file:
       - .env
@@ -90,7 +90,7 @@ services:
         ipv4_address: 172.31.0.15
 
   redis-node-6:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     container_name: redis-node-6
     env_file:
       - .env

@@ -1,6 +1,6 @@
 services:
   redis:
-    image: redis:${REDIS_VERSION:-7.2.4}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     env_file:
       - .env
     command: ["/bin/sh", "/usr/local/bin/bootstrap-config.sh"]
