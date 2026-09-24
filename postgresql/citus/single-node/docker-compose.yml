@@ -1,0 +1,27 @@
+name: pg-citus-pg17-lab
+
+x-environment: &environment
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  TZ: ${TZ:-Asia/Seoul}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-lab}
+
+x-healthcheck: &healthcheck
+  test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+  interval: 5s
+  timeout: 5s
+  retries: 20
+
+services:
+  citus:
+    image: ${POSTGRES_IMAGE:-citusdata/citus:14.2.0-pg17@sha256:a8e720198e83d9f8bd3884a0aeb32aa1e2b426393fba96882587c9fe607d1417}
+    platform: linux/amd64
+    env_file:
+      - .env
+    environment: *environment
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5545}:5432"]
+    volumes: ["citus-data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+volumes:
+  citus-data:

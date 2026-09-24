@@ -1,0 +1,81 @@
+{
+  "checked_at": "2026-09-24",
+  "images": {
+    "postgres-alpine": {
+      "image": "postgres:17.11-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "postgres_version": "17.11",
+      "extension_version": null,
+      "platforms": [
+        "386",
+        "amd64",
+        "arm",
+        "arm64",
+        "ppc64le",
+        "riscv64",
+        "s390x"
+      ]
+    },
+    "postgres-bookworm": {
+      "image": "postgres:17.11-bookworm@sha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652",
+      "postgres_version": "17.11-1.pgdg12+2",
+      "extension_version": null,
+      "platforms": [
+        "386",
+        "amd64",
+        "arm",
+        "arm64",
+        "ppc64le"
+      ]
+    },
+    "postgis": {
+      "image": "postgis/postgis:17-3.6-alpine@sha256:a8ffa9afeea4ad6eada171fa2afdb57cd3eb90f92ce20156aa2cb8411d70e0cd",
+      "postgres_version": "17.11",
+      "extension_version": "3.6.4",
+      "platforms": [
+        "amd64"
+      ]
+    },
+    "pgvector": {
+      "image": "pgvector/pgvector:0.8.6-pg17-bookworm@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f",
+      "postgres_version": "17.11-1.pgdg12+2",
+      "extension_version": null,
+      "platforms": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "pg-search": {
+      "image": "paradedb/paradedb:0.25.10-pg17@sha256:293e187d9007952ceeed35b3ed7b10ec996566f48795d71fb8cd5a60c5738634",
+      "postgres_version": "17.11-1.pgdg13+2",
+      "extension_version": null,
+      "platforms": [
+        "amd64",
+        "arm64"
+      ]
+    },
+    "timescaledb": {
+      "image": "timescale/timescaledb:2.30.1-pg17@sha256:c79fa5891443d1cdf6de5258d4c2bdb8cde29052c45df2062b13d351e0202005",
+      "postgres_version": "17.11",
+      "extension_version": null,
+      "platforms": [
+        "386",
+        "amd64",
+        "arm",
+        "arm64"
+      ]
+    },
+    "citus": {
+      "image": "citusdata/citus:14.2.0-pg17@sha256:a8e720198e83d9f8bd3884a0aeb32aa1e2b426393fba96882587c9fe607d1417",
+      "postgres_version": "17.10-1.pgdg13+1",
+      "extension_version": "14.2.0.citus-1",
+      "platforms": [
+        "amd64"
+      ]
+    }
+  },
+  "pg_cron": {
+    "version": "1.6.8",
+    "bookworm_package": "1.6.8-1.pgdg12+1",
+    "trixie_package": "1.6.8-1.pgdg13+1"
+  }
+}

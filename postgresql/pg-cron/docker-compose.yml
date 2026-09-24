@@ -1,0 +1,41 @@
+name: pg-pg-cron-lab
+
+x-environment: &environment
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  TZ: ${TZ:-Asia/Seoul}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-lab}
+
+x-healthcheck: &healthcheck
+  test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+  interval: 5s
+  timeout: 5s
+  retries: 20
+
+services:
+  ops:
+    build:
+      context: .
+      args:
+        BASE_IMAGE: ${POSTGRES_IMAGE:-postgres:17.11-bookworm@sha256:639ab7ceb90e13123085b741fb31ef493fba25463002f6da665352e7b534b652}
+    env_file:
+      - .env
+    environment: *environment
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5546}:5432"]
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=${POSTGRES_DB:-lab}
+      - -c
+      - cron.timezone=${TZ:-Asia/Seoul}
+      - -c
+      - cron.use_background_workers=on
+      - -c
+      - max_worker_processes=16
+    volumes: ["ops-data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+volumes:
+  ops-data:

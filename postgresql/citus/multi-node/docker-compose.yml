@@ -1,0 +1,77 @@
+name: citus-fintech-pg17-lab
+
+x-environment: &environment
+  POSTGRES_USER: ${POSTGRES_USER:-admin}
+  TZ: ${TZ:-Asia/Seoul}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-fintech_dist_db}
+  # 로컬 실습 전용. 접속을 허용한 호스트의 비밀번호 검증을 생략한다.
+  POSTGRES_HOST_AUTH_METHOD: trust
+
+x-healthcheck: &healthcheck
+  test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+  interval: 5s
+  timeout: 5s
+  retries: 20
+
+services:
+  citus-coordinator:
+    platform: linux/amd64
+    build:
+      context: ./coordinator
+      args:
+        BASE_IMAGE: ${POSTGRES_IMAGE:-citusdata/citus:14.2.0-pg17@sha256:a8e720198e83d9f8bd3884a0aeb32aa1e2b426393fba96882587c9fe607d1417}
+    container_name: citus-coordinator
+    env_file:
+      - .env
+    environment: *environment
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5434}:5432"]
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=citus,pg_cron
+      - -c
+      - cron.database_name=${POSTGRES_DB:-fintech_dist_db}
+      - -c
+      - cron.timezone=${TZ:-Asia/Seoul}
+      - -c
+      - citus.node_conninfo=sslmode=disable
+    volumes: ["citus_coordinator_data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+  citus-worker-1:
+    image: ${POSTGRES_IMAGE:-citusdata/citus:14.2.0-pg17@sha256:a8e720198e83d9f8bd3884a0aeb32aa1e2b426393fba96882587c9fe607d1417}
+    platform: linux/amd64
+    container_name: citus-worker-1
+    env_file:
+      - .env
+    environment: *environment
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=citus
+      - -c
+      - citus.node_conninfo=sslmode=disable
+    volumes: ["citus_worker_1_data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+  citus-worker-2:
+    image: ${POSTGRES_IMAGE:-citusdata/citus:14.2.0-pg17@sha256:a8e720198e83d9f8bd3884a0aeb32aa1e2b426393fba96882587c9fe607d1417}
+    platform: linux/amd64
+    container_name: citus-worker-2
+    env_file:
+      - .env
+    environment: *environment
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=citus
+      - -c
+      - citus.node_conninfo=sslmode=disable
+    volumes: ["citus_worker_2_data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+volumes:
+  citus_coordinator_data:
+  citus_worker_1_data:
+  citus_worker_2_data:

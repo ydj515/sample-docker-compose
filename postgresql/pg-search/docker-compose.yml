@@ -1,0 +1,27 @@
+name: pg-pg-search-pg17-lab
+
+x-environment: &environment
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  TZ: ${TZ:-Asia/Seoul}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-lab}
+
+x-healthcheck: &healthcheck
+  test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+  interval: 5s
+  timeout: 5s
+  retries: 20
+
+services:
+  search:
+    image: ${POSTGRES_IMAGE:-paradedb/paradedb:0.25.10-pg17@sha256:293e187d9007952ceeed35b3ed7b10ec996566f48795d71fb8cd5a60c5738634}
+    env_file:
+      - .env
+    environment: *environment
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5543}:5432"]
+    # PostgreSQL 17 전용 이미지의 데이터 경로입니다.
+    volumes: ["search-data:/var/lib/postgresql/data", "./initdb.d/99-enable-extension.sql:/docker-entrypoint-initdb.d/99-enable-extension.sql:ro"]
+    healthcheck: *healthcheck
+
+volumes:
+  search-data:
