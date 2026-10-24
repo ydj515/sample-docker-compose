@@ -1,0 +1,38 @@
+# A2A experiment uses port 3000; the existing port 4000 UI mapping is unused.
+binds:
+  - port: 3000
+    listeners:
+      - routes:
+          - matches: [{path: {pathPrefix: /a2a}}]
+            policies:
+              a2a: {}
+              apiKey:
+                mode: strict
+                keys:
+                  - keyHash: "@BASELINE_HASH@"
+                    metadata: {user: baseline}
+                  - keyHash: "@CALCULATOR_HASH@"
+                    metadata: {user: calculator}
+              localRateLimit:
+                - maxTokens: 20
+                  tokensPerFill: 20
+                  fillInterval: 10s
+                  type: requests
+                  key: apiKey.user
+            backends: [{host: 'a2a-demo:3010'}]
+          - matches: [{path: {pathPrefix: /raw}}]
+            policies:
+              apiKey:
+                mode: strict
+                keys:
+                  - keyHash: "@BASELINE_HASH@"
+                    metadata: {user: baseline}
+                  - keyHash: "@CALCULATOR_HASH@"
+                    metadata: {user: calculator}
+              localRateLimit:
+                - maxTokens: 20
+                  tokensPerFill: 20
+                  fillInterval: 10s
+                  type: requests
+                  key: apiKey.user
+            backends: [{host: 'a2a-demo:3010'}]

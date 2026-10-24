@@ -1,0 +1,31 @@
+# No external ports: gateways use gRPC; counters stay inside this Compose project.
+services:
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: [redis-server, --appendonly, 'yes']
+    volumes:
+      - ratelimit-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  ratelimit:
+    image: envoyproxy/ratelimit:master@sha256:92edca99e60cca800e82c30065e854fc37f20fbfad0fd66777d3234f4a636a64
+    environment:
+      CONFIG_TYPE: FILE
+      USE_STATSD: 'false'
+      LOG_LEVEL: warn
+      REDIS_SOCKET_TYPE: tcp
+      REDIS_URL: redis:6379
+      RUNTIME_ROOT: /data
+      RUNTIME_SUBDIRECTORY: ratelimit
+      RUNTIME_WATCH_ROOT: 'false'
+      HEALTHY_WITH_AT_LEAST_ONE_CONFIG_LOADED: 'true'
+    volumes:
+      - ../shared/ratelimit:/data/ratelimit/config:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+volumes:
+  ratelimit-data:

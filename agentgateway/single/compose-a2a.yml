@@ -1,0 +1,13 @@
+services:
+  a2a-demo:
+    build: ../shared/a2a-server
+    init: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3010/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  agentgateway:
+    depends_on:
+      a2a-demo:
+        condition: service_healthy

@@ -1,0 +1,15 @@
+# Each unique client has one shared bucket across gateway replicas.
+domain: sample-global
+descriptors:
+  - key: client
+    rate_limit:
+      unit: hour
+      requests_per_unit: 5
+  - key: recovery-client
+    rate_limit:
+      unit: second
+      requests_per_unit: 2
+  - key: mcp-client
+    rate_limit:
+      unit: hour
+      requests_per_unit: 10

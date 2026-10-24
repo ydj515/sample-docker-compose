@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+    transformations:
+      request:
+        set:
+          x-policy-gateway: '"gateway"'
+          x-policy-winner: '"gateway"'
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:4000
+        - http://127.0.0.1:4000
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp
+
+routes:
+  - matches:
+      - path:
+          exact: /inspect-headers
+    policies:
+      transformations:
+        request:
+          set:
+            x-policy-route: request.headers["x-policy-gateway"] + ">route"
+            x-policy-winner: '"route"'
+    backends:
+      - host: mcp-demo:3005
+        policies:
+          requestHeaderModifier:
+            set:
+              x-policy-backend: backend
+              x-policy-winner: backend
+  - matches:
+      - path:
+          pathPrefix: /mcp-inheritance
+    backends:
+      - mcp:
+          statefulMode: stateless
+          prefixMode: always
+          targets:
+            - name: inherited
+              mcp:
+                host: http://mcp-demo:3005/mcp-inspect
+            - name: overridden
+              mcp:
+                host: http://mcp-demo:3005/mcp-inspect
+              policies:
+                requestHeaderModifier:
+                  set:
+                    x-policy-winner: target
+        policies:
+          mcpAuthorization:
+            rules:
+              - 'mcp.tool.name == "inspect_headers"'
+          requestHeaderModifier:
+            set:
+              x-policy-winner: common
+              x-policy-common: common-only

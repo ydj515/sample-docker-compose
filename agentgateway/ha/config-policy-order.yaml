@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  statefulMode: stateless
+  dnsRebindingProtection: true
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:14001
+        - http://localhost:14002
+        - http://127.0.0.1:14001
+        - http://127.0.0.1:14002
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp
+
+# A dedicated HTTP route keeps this precedence test separate from MCP calls.
+routes:
+  - matches:
+      - path:
+          pathPrefix: /policy-order
+    policies:
+      directResponse:
+        conditional:
+          - condition: request.path.startsWith("/policy-order/admin")
+            status: 403
+            body: "first-admin-rule"
+          - condition: request.path.startsWith("/policy-order")
+            status: 200
+            body: "second-general-rule"
+  - matches:
+      - path:
+          pathPrefix: /policy-fallback
+    policies:
+      directResponse:
+        conditional:
+          - condition: request.path == "/policy-fallback/matched"
+            status: 200
+            body: "matched-rule"
+          - status: 418
+            body: "fallback-rule"
+  - matches:
+      - path:
+          pathPrefix: /policy-no-fallback
+    policies:
+      directResponse:
+        conditional:
+          - condition: request.path == "/policy-no-fallback/blocked"
+            status: 403
+            body: "blocked-rule"
+    backends:
+      - host: mcp-demo:3005

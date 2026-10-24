@@ -1,0 +1,48 @@
+services:
+  gateway-1:
+    ports:
+      - "127.0.0.1:14401:3443"
+    volumes:
+      - ./tls-certs/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ./tls-certs/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ./tls-certs/ca.crt:/certs/ca.crt:ro
+      - ./tls-certs/wrong-ca.crt:/certs/wrong-ca.crt:ro
+    depends_on:
+      mcp-tls:
+        condition: service_healthy
+  gateway-2:
+    ports:
+      - "127.0.0.1:14402:3443"
+    volumes:
+      - ./tls-certs/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ./tls-certs/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ./tls-certs/ca.crt:/certs/ca.crt:ro
+      - ./tls-certs/wrong-ca.crt:/certs/wrong-ca.crt:ro
+    depends_on:
+      mcp-tls:
+        condition: service_healthy
+  load-balancer:
+    ports:
+      - "127.0.0.1:13443:3443"
+    volumes:
+      - ./nginx-tls.conf:/etc/nginx/nginx.conf:ro
+      - ./tls-certs/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ./tls-certs/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ./tls-certs/ca.crt:/certs/ca.crt:ro
+  mcp-tls:
+    build: ../shared/mcp-server
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    init: true
+    environment:
+      PORT: '3445'
+      TLS_CERT: /certs/tls.crt
+      TLS_KEY: /certs/tls.key
+    volumes:
+      - ./tls-certs/backend/tls.crt:/certs/tls.crt:ro
+      - ./tls-certs/backend/tls.key:/certs/tls.key:ro
+      - ./tls-certs/ca.crt:/ca.crt:ro
+    healthcheck:
+      test: [CMD, node, -e, "require('node:https').get('https://mcp-tls:3445/healthz',{ca:require('node:fs').readFileSync('/ca.crt')},r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:4000
+        - http://127.0.0.1:4000
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp
+
+
+# Isolated HTTP probes; ordinary MCP tools keep their baseline policies.
+routes:
+  - matches: [{path: {exact: /processing/headers}}]
+    policies:
+      requestHeaderModifier:
+        add: {x-policy-common: appended}
+        set: {x-policy-winner: gateway}
+        remove: [x-policy-route]
+      responseHeaderModifier:
+        set: {x-policy-winner: response-policy}
+        add: {x-policy-backend: added}
+        remove: [x-policy-common]
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/body}}]
+    policies:
+      transformations:
+        request:
+          body: '"Hello " + request.headers["x-policy-common"]'
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/response}}]
+    policies:
+      transformations:
+        response:
+          body: '"Response code: " + string(response.code)'
+      responseHeaderModifier:
+        set: {content-type: text/plain}
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /rewrite-source}}]
+    policies:
+      urlRewrite:
+        path: {full: /processing/rewritten}
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/mirror}}]
+    policies:
+      requestMirror:
+        backend: {host: 'mirror-demo:3005'}
+        percentage: 1.0
+    backends: [{host: 'mcp-demo:3005'}]
+  # Diagnostic only: v1.6.0 drops mirror bodies even with explicit buffering.
+  - matches: [{path: {exact: /processing/mirror-buffered}}]
+    policies:
+      buffer:
+        request:
+          maxBytes: 65536
+          failureMode: failClosed
+      requestMirror:
+        backend: {host: 'mirror-demo:3005'}
+        percentage: 1.0
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/mirror/stats}}]
+    backends: [{host: 'mirror-demo:3005'}]
+  - matches: [{path: {exact: /processing/delay}}]
+    policies:
+      delay: {duration: 200ms}
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/delay-timeout}}]
+    policies:
+      delay: {duration: 500ms}
+      timeout: {requestTimeout: 100ms}
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /processing/stats}}]
+    backends: [{host: 'mcp-demo:3005'}]

@@ -1,0 +1,30 @@
+name: agentgateway-single
+
+services:
+  agentgateway:
+    image: ${AGENTGATEWAY_IMAGE:-cr.agentgateway.dev/agentgateway:v1.6.0}
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    command: ["-f", "/config/config.yaml"]
+    ports:
+      - "127.0.0.1:${AGENTGATEWAY_UI_PORT:-4000}:4000"
+      - "127.0.0.1:${AGENTGATEWAY_MCP_PORT:-3000}:3000"
+    volumes:
+      - ${AGENTGATEWAY_CONFIG:-./config.yaml}:/config/config.yaml:ro
+      - ./data:/data
+    depends_on:
+      mcp-demo:
+        condition: service_healthy
+        restart: true
+
+  mcp-demo:
+    build: ../shared/mcp-server
+    init: true
+    environment:
+      PORT: "3005"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3005/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+

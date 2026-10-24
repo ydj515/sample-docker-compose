@@ -1,0 +1,41 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0@sha256:27b3230fbabb8c9ff3c66c864cf09dcd8a41aca82e5100679d109ef0eeb05741
+    # Local development only: read the owner-only generated realm import.
+    user: "0:0"
+    command: [start-dev, --import-realm]
+    environment:
+      KC_HOSTNAME: http://localhost:28080
+      KC_HTTP_ACCESS_LOG_ENABLED: "false"
+    ports:
+      - "127.0.0.1:28080:8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          bash -ec 'exec 3<>/dev/tcp/127.0.0.1/8080;
+          printf "GET /realms/agentgateway-mtls/.well-known/openid-configuration HTTP/1.0\r\nHost: localhost\r\n\r\n" >&3;
+          read -r status <&3; [[ "$$status" == *" 200 "* ]]'
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    tmpfs:
+      - /opt/keycloak/data/import
+    mem_limit: 1g
+    volumes:
+      - ./data/oidc-mtls/agentgateway-realm.json:/opt/keycloak/data/import/agentgateway-mtls-realm.json:ro
+      - oidc-mtls-data:/opt/keycloak/data
+
+  gateway-1:
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  gateway-2:
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  oidc-mtls-data:

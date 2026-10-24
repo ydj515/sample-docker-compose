@@ -1,0 +1,22 @@
+services:
+  jwks-fixture:
+    build: ../shared/jwks-server
+    init: true
+    environment:
+      ISSUER: http://localhost:28090
+      AUDIENCE: https://localhost:13443/mcp/mtls
+    ports:
+      - "127.0.0.1:28090:9080"
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:9080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  gateway-1:
+    depends_on:
+      jwks-fixture:
+        condition: service_healthy
+  gateway-2:
+    depends_on:
+      jwks-fixture:
+        condition: service_healthy

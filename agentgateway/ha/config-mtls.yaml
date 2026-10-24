@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+gateways:
+  default:
+    port: 4000
+  secure:
+    port: 3443
+    protocol: HTTPS
+    tls:
+      cert: /certs/gateway/tls.crt
+      key: /certs/gateway/tls.key
+      root: /certs/frontend-ca.crt
+ui:
+  gateways: default
+routes:
+  - name: mcp-mtls
+    gateways: [secure]
+    matches: [{path: {exact: /mcp/mtls}}]
+    backends:
+      - mcp:
+          statefulMode: stateless
+          targets:
+            - name: demo
+              mcp:
+                host: https://mcp-mtls:3445/mcp
+              policies:
+                backendTLS:
+                  root: /certs/ca.crt
+                  hostname: mcp-mtls
+                  cert: /certs/gateway-client/tls.crt
+                  key: /certs/gateway-client/tls.key
+  - name: mtls-check-good
+    gateways: [secure]
+    matches: [{path: {exact: /mtls-check/good}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-mtls:3445
+        policies:
+          backendTLS:
+            root: /certs/ca.crt
+            hostname: mcp-mtls
+            cert: /certs/gateway-client/tls.crt
+            key: /certs/gateway-client/tls.key
+  - name: mtls-check-no-client
+    gateways: [secure]
+    matches: [{path: {exact: /mtls-check/no-client}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-mtls:3445
+        policies:
+          backendTLS:
+            root: /certs/ca.crt
+            hostname: mcp-mtls
+  - name: mtls-check-bad-client
+    gateways: [secure]
+    matches: [{path: {exact: /mtls-check/bad-client}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-mtls:3445
+        policies:
+          backendTLS:
+            root: /certs/ca.crt
+            hostname: mcp-mtls
+            cert: /certs/rogue-client/tls.crt
+            key: /certs/rogue-client/tls.key

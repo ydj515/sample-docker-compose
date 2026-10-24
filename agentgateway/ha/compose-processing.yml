@@ -1,0 +1,12 @@
+services:
+  mirror-demo:
+    build: ../shared/mcp-server
+    init: true
+    environment:
+      PORT: "3005"
+      PROBE_ROLE: mirror
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3005/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

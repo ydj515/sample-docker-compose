@@ -1,0 +1,56 @@
+name: agentgateway-ha
+
+x-gateway: &gateway
+  image: ${AGENTGATEWAY_IMAGE:-cr.agentgateway.dev/agentgateway:v1.6.0}
+  user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+  command: ["-f", "/config/config.yaml"]
+  depends_on:
+    mcp-demo:
+      condition: service_healthy
+      restart: true
+
+services:
+  gateway-1:
+    <<: *gateway
+    ports:
+      - "127.0.0.1:${GATEWAY_1_UI_PORT:-14001}:4000"
+    volumes:
+      - ${AGENTGATEWAY_CONFIG:-./config.yaml}:/config/config.yaml:ro
+      - ./data/gateway-1:/data
+
+  gateway-2:
+    <<: *gateway
+    ports:
+      - "127.0.0.1:${GATEWAY_2_UI_PORT:-14002}:4000"
+    volumes:
+      - ${AGENTGATEWAY_CONFIG:-./config.yaml}:/config/config.yaml:ro
+      - ./data/gateway-2:/data
+
+  load-balancer:
+    image: nginx:1.28-alpine
+    ports:
+      - "127.0.0.1:${AGENTGATEWAY_MCP_PORT:-13000}:3000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      gateway-1:
+        condition: service_started
+      gateway-2:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mcp-demo:
+    build: ../shared/mcp-server
+    init: true
+    environment:
+      PORT: "3005"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3005/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s

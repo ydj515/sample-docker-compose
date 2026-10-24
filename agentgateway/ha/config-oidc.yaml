@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    mcpAuthentication:
+      mode: strict
+      issuer: http://localhost:28080/realms/agentgateway
+      audiences: ["http://localhost:13000/mcp"]
+      jwks:
+        url: http://keycloak:8080/realms/agentgateway/protocol/openid-connect/certs
+      resourceMetadata:
+        resource: http://localhost:13000/mcp
+        authorization_servers: ["http://localhost:28080/realms/agentgateway"]
+        scopes_supported: [openid]
+        bearer_methods_supported: [header]
+    mcpAuthorization:
+      rules:
+        - 'mcp.tool.name == "echo"'
+        - 'mcp.tool.name == "add" && jwt.demo_role == "calculator"'
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp

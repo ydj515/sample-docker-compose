@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:4000
+        - http://127.0.0.1:4000
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp

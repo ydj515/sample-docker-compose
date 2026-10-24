@@ -1,0 +1,63 @@
+services:
+  gateway-1:
+    ports:
+      - "127.0.0.1:14401:3443"
+    volumes:
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway-client/tls.crt:/certs/gateway-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway-client/tls.key:/certs/gateway-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/rogue-client/tls.crt:/certs/rogue-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/rogue-client/tls.key:/certs/rogue-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/ca.crt:/certs/ca.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/frontend-ca.crt:/certs/frontend-ca.crt:ro
+    depends_on:
+      mcp-mtls:
+        condition: service_healthy
+  gateway-2:
+    ports:
+      - "127.0.0.1:14402:3443"
+    volumes:
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway-client/tls.crt:/certs/gateway-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway-client/tls.key:/certs/gateway-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/rogue-client/tls.crt:/certs/rogue-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/rogue-client/tls.key:/certs/rogue-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/ca.crt:/certs/ca.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/frontend-ca.crt:/certs/frontend-ca.crt:ro
+    depends_on:
+      mcp-mtls:
+        condition: service_healthy
+  load-balancer:
+    ports:
+      - "127.0.0.1:13443:3443"
+    volumes:
+      - ./nginx-mtls.conf:/etc/nginx/nginx.conf:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.crt:/certs/gateway/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/gateway/tls.key:/certs/gateway/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/proxy-client/tls.crt:/certs/proxy-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/proxy-client/tls.key:/certs/proxy-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/ca.crt:/certs/ca.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/frontend-ca.crt:/certs/frontend-ca.crt:ro
+  mcp-mtls:
+    build: ../shared/mcp-server
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    init: true
+    environment:
+      PORT: '3445'
+      TLS_CERT: /certs/backend/tls.crt
+      TLS_KEY: /certs/backend/tls.key
+      TLS_CLIENT_CA: /certs/backend-ca.crt
+    volumes:
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/backend/tls.crt:/certs/backend/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/backend/tls.key:/certs/backend/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/health-client/tls.crt:/certs/health-client/tls.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/health-client/tls.key:/certs/health-client/tls.key:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/ca.crt:/certs/ca.crt:ro
+      - ${MTLS_CERT_DIR:-./mtls-certs/v1}/backend-ca.crt:/certs/backend-ca.crt:ro
+    healthcheck:
+      test: [CMD, node, -e, "const fs=require('node:fs');require('node:https').get('https://mcp-mtls:3445/healthz',{ca:fs.readFileSync('/certs/ca.crt'),cert:fs.readFileSync('/certs/health-client/tls.crt'),key:fs.readFileSync('/certs/health-client/tls.key')},r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

@@ -1,0 +1,8 @@
+# Test-only direct MCP ports allow per-replica counter comparisons.
+services:
+  gateway-1:
+    ports:
+      - "127.0.0.1:16001:3000"
+  gateway-2:
+    ports:
+      - "127.0.0.1:16002:3000"

@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    remoteRateLimit:
+      host: ratelimit:8081
+      domain: sample-global
+      failureMode: failClosed
+      descriptors:
+        - entries:
+            - key: mcp-client
+              value: 'default(request.headers["x-demo-client"], "anonymous")'
+          type: requests
+    cors:
+      allowOrigins:
+        - http://localhost:4000
+        - http://127.0.0.1:4000
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+        - x-demo-client
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp
+
+
+# Isolate HTTP accounting from MCP initialization and tool calls.
+routes:
+  - matches: [{path: {exact: /global-limit}}]
+    policies:
+      remoteRateLimit:
+        host: ratelimit:8081
+        domain: sample-global
+        failureMode: failClosed
+        descriptors:
+          - entries:
+              - key: client
+                value: 'default(request.headers["x-demo-client"], "anonymous")'
+            type: requests
+      urlRewrite:
+        path: {full: /healthz}
+    backends: [{host: 'mcp-demo:3005'}]
+  - matches: [{path: {exact: /global-recovery}}]
+    policies:
+      remoteRateLimit:
+        host: ratelimit:8081
+        domain: sample-global
+        failureMode: failClosed
+        descriptors:
+          - entries:
+              - key: recovery-client
+                value: 'default(request.headers["x-demo-client"], "anonymous")'
+            type: requests
+      urlRewrite:
+        path: {full: /healthz}
+    backends: [{host: 'mcp-demo:3005'}]

@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+gateways:
+  default:
+    port: 4000
+  traffic:
+    port: 3000
+ui:
+  gateways: default
+routes:
+  - gateways: [default, traffic]
+    matches: [{path: {pathPrefix: /processing/}}]
+    policies: &authorized
+      apiKey:
+        mode: strict
+        keys:
+          - keyHash: "@BASELINE_HASH@"
+            metadata:
+              user: baseline
+              role: viewer
+          - keyHash: "@DENIED_HASH@"
+            metadata:
+              user: denied
+              role: viewer
+          - keyHash: "@INVALID_HASH@"
+            metadata:
+              user: invalid
+              role: viewer
+          - keyHash: "@CALCULATOR_HASH@"
+            metadata:
+              user: calculator
+              role: calculator
+      extAuthz:
+        host: authz:9000
+        failureMode: deny
+        policies:
+          http:
+            requestTimeout: 100ms
+          tcp:
+            connectTimeout: 100ms
+        includeRequestHeaders: []
+        includeRequestBody:
+          maxRequestBytes: 1024
+          allowPartialMessage: false
+        protocol:
+          http:
+            path: '"/auth" + request.path'
+            addRequestHeaders:
+              x-authz-role: apiKey.role
+              x-authz-user: apiKey.user
+            includeResponseHeaders: [x-policy-winner]
+    backends: [{host: 'mcp-demo:3005'}]
+  - gateways: [traffic]
+    matches: [{path: {exact: /mcp}}]
+    policies: *authorized
+    backends:
+      - mcp:
+          statefulMode: stateless
+          targets:
+            - name: demo
+              mcp:
+                host: http://mcp-demo:3005/mcp
+  # Test-only receipt inspection; uses unique random ids, no request credentials.
+  - gateways: [default]
+    matches: [{path: {exact: /authz-stats}}]
+    policies:
+      urlRewrite:
+        path: {full: /processing/stats}
+    backends: [{host: 'mcp-demo:3005'}]

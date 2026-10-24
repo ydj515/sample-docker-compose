@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  dnsRebindingProtection: true
+  policies:
+    # Both limits apply; buckets remain local to each replica.
+    localRateLimit:
+      - maxTokens: 60
+        tokensPerFill: 60
+        fillInterval: 10s
+        type: requests
+      - maxTokens: 20
+        tokensPerFill: 20
+        fillInterval: 10s
+        type: requests
+        key: request.headers["x-demo-client"]
+    mcpAuthorization:
+      rules:
+        - 'mcp.tool.name == "echo"'
+        - 'mcp.tool.name == "add" && request.headers["x-demo-role"] == "calculator"'
+    cors:
+      allowOrigins:
+        - http://localhost:4000
+        - http://127.0.0.1:4000
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+        - x-demo-client
+        - x-demo-role
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp

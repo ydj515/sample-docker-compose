@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+gateways:
+  default:
+    port: 4000
+  plain:
+    port: 3000
+    protocol: HTTP
+  secure:
+    port: 3443
+    protocol: HTTPS
+    tls:
+      cert: /certs/gateway/tls.crt
+      key: /certs/gateway/tls.key
+ui:
+  gateways: default
+routes:
+  - name: mcp-plain
+    gateways: [plain, secure]
+    matches: [{path: {exact: /mcp/plain}}]
+    backends:
+      - mcp:
+          statefulMode: stateless
+          targets:
+            - name: demo
+              mcp:
+                host: http://mcp-demo:3005/mcp
+  - name: mcp-tls
+    gateways: [plain, secure]
+    matches: [{path: {exact: /mcp/tls}}]
+    backends:
+      - mcp:
+          statefulMode: stateless
+          targets:
+            - name: demo
+              mcp:
+                host: https://mcp-tls:3445/mcp
+              policies:
+                backendTLS:
+                  root: /certs/ca.crt
+                  hostname: mcp-tls
+  - name: tls-check-good
+    gateways: [plain, secure]
+    matches: [{path: {exact: /tls-check/good}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-tls:3445
+        policies:
+          backendTLS:
+            root: /certs/ca.crt
+            hostname: mcp-tls
+  - name: tls-check-bad-ca
+    gateways: [plain, secure]
+    matches: [{path: {exact: /tls-check/bad-ca}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-tls:3445
+        policies:
+          backendTLS:
+            root: /certs/wrong-ca.crt
+            hostname: mcp-tls
+  - name: tls-check-bad-host
+    gateways: [plain, secure]
+    matches: [{path: {exact: /tls-check/bad-host}}]
+    policies:
+      urlRewrite:
+        path: {full: /healthz}
+    backends:
+      - host: mcp-tls:3445
+        policies:
+          backendTLS:
+            root: /certs/ca.crt
+            hostname: wrong.invalid

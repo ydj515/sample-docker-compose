@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+config:
+  database:
+    url: sqlite:///data/data.db
+
+gateways:
+  default:
+    port: 4000
+
+ui:
+  gateways: default
+
+mcp:
+  port: 3000
+  statefulMode: stateless
+  dnsRebindingProtection: true
+  policies:
+    cors:
+      allowOrigins:
+        - http://localhost:14001
+        - http://localhost:14002
+        - http://127.0.0.1:14001
+        - http://127.0.0.1:14002
+      allowHeaders:
+        - content-type
+        - mcp-protocol-version
+        - mcp-session-id
+        - cache-control
+      exposeHeaders:
+        - Mcp-Session-Id
+  targets:
+    - name: demo
+      mcp:
+        host: http://mcp-demo:3005/mcp
+
+# HTTP fault probes are isolated from ordinary MCP traffic.
+routes:
+  - matches:
+      - path:
+          exact: /resilience/retry
+    policies:
+      retry:
+        attempts: 3
+        backoff: 20ms
+        codes: [503]
+      timeout:
+        requestTimeout: 5s
+        backendRequestTimeout: 2s
+    backends:
+      - host: mcp-demo:3005
+  - matches:
+      - path:
+          exact: /resilience/no-retry
+    # No retry policy: do not replay requests to this route.
+    backends:
+      - host: mcp-demo:3005
+  - matches:
+      - path:
+          exact: /resilience/timeout
+    policies:
+      timeout:
+        requestTimeout: 2s
+        backendRequestTimeout: 200ms
+    backends:
+      - host: mcp-demo:3005
+  - matches:
+      - path:
+          exact: /resilience/budget
+    policies:
+      retry:
+        attempts: 10
+        backoff: 100ms
+        codes: [503]
+      timeout:
+        requestTimeout: 400ms
+        backendRequestTimeout: 2s
+    backends:
+      - host: mcp-demo:3005
+  - matches:
+      - path:
+          exact: /resilience/stats
+    backends:
+      - host: mcp-demo:3005
