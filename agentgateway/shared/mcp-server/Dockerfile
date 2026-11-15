@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim
+FROM node:24.22.3-bookworm-slim
 WORKDIR /app
 COPY --chown=node:node server.mjs server.test.mjs ./
 RUN node --test server.test.mjs
